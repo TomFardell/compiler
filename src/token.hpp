@@ -54,8 +54,9 @@ class Token {
 
  public:
   Token(std::string_view text, TokenType type) : m_text{text}, m_type{type} {};
-  std::string_view get_text() { return m_text; }
-  TokenType get_type() { return m_type; }
+
+  std::string_view get_text() { return m_text; }  // Get the text associated with the token
+  TokenType get_type() { return m_type; }         // Get the type of the token
 };
 
 #endif

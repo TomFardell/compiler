@@ -4,12 +4,10 @@
 int main() {
   Lexer lexer{"+- */"};
 
-  while (lexer.peek() != '\0') {
-    std::cout << lexer.get_cursor_char();
-    lexer.next_char();
+  while (lexer.get_cursor_char() != '\0') {
+    Token this_token{lexer.get_token()};
+    std::cout << this_token.get_type() << " '" << this_token.get_text() << "'\n";
   }
-
-  std::cout << "\n";
 
   return 0;
 }

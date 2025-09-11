@@ -1,8 +1,9 @@
 #include <string>
 #include "lexer.hpp"
+#include "token.hpp"
 
-Lexer::Lexer(std::string source)
-    : m_source{source + "\n"},
+Lexer::Lexer(std::string_view source)
+    : m_source{source},
       m_source_length{static_cast<int>(std::size(m_source))},
       m_cursor_char{' '},
       m_cursor_pos{-1} {
@@ -23,4 +24,40 @@ char Lexer::peek() {
     return '\0';
   else
     return m_source[m_cursor_pos + 1];
+}
+
+Token Lexer::get_token() {
+  Token result{"", TOKEN_NULL};
+
+  if (m_cursor_char == '\0') {
+    result = Token{"", TOKEN_EOF};
+  } else if (m_cursor_char == ',') {
+    result = Token{",", TOKEN_COMMA};
+  } else if (m_cursor_char == '/') {
+    result = Token{"/", TOKEN_DIVIDE};
+  } else if (m_cursor_char == '{') {
+    result = Token{"{", TOKEN_LBRACE};
+  } else if (m_cursor_char == '[') {
+    result = Token{"[", TOKEN_LBRACKET};
+  } else if (m_cursor_char == '(') {
+    result = Token{"(", TOKEN_LPAREN};
+  } else if (m_cursor_char == '-') {
+    result = Token{"-", TOKEN_MINUS};
+  } else if (m_cursor_char == '*') {
+    result = Token{"*", TOKEN_MULTIPLY};
+  } else if (m_cursor_char == '+') {
+    result = Token{"+", TOKEN_PLUS};
+  } else if (m_cursor_char == '\'') {
+    result = Token{"'", TOKEN_QUOTE};
+  } else if (m_cursor_char == '}') {
+    result = Token{"}", TOKEN_RBRACE};
+  } else if (m_cursor_char == ']') {
+    result = Token{"]", TOKEN_RBRACKET};
+  } else if (m_cursor_char == ')') {
+    result = Token{")", TOKEN_RPAREN};
+  } else if (m_cursor_char == ';') {
+    result = Token{";", TOKEN_SEMICOLON};
+  }
+  next_char();
+  return result;
 }
