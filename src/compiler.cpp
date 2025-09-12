@@ -2,7 +2,7 @@
 #include "lexer.hpp"
 
 int main() {
-  Lexer lexer{"+- */ == = != > >= < <= ||&&&="};
+  Lexer lexer{"+- */ /* comment */ == = != > >= < <= ||&&&="};
 
   while (lexer.get_cursor_char() != '\0') {
     Token this_token{lexer.get_token()};

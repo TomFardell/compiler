@@ -20,6 +20,7 @@ class Lexer {
 
   void next_char();        // Process the next character in the source string
   void skip_whitespace();  // Move the cursor over any whitespace characters
+  void skip_comments();    // Move the cursor past any sections of comments separated by whitespace
   Token get_token();       // Get the next token from the source string
 
   void abort(std::string);  // Stop the compilation due to a lexing error
