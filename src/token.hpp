@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include <string_view>
+#include <map>
 
 enum TokenType {
   TOKEN_NULL,
@@ -9,6 +10,7 @@ enum TokenType {
   TOKEN_IDENTIFIER,
   TOKEN_INT_LITERAL,
   TOKEN_FLOAT_LITERAL,
+  TOKEN_STRING_LITERAL,
 
   // Keywords
   TOKEN_ELSE,
@@ -46,6 +48,12 @@ enum TokenType {
   TOKEN_SEMICOLON,  // Operator: ;
 
 };
+
+// TokenType lookup for keyword strings
+const std::map<std::string_view, TokenType> token_keyword_lookup = {
+    {"else", TOKEN_ELSE},     {"exit", TOKEN_EXIT},   {"float", TOKEN_FLOAT},
+    {"if", TOKEN_IF},         {"int", TOKEN_INT},     {"read", TOKEN_READ},
+    {"return", TOKEN_RETURN}, {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
 
 class Token {
  private:

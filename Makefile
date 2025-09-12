@@ -1,5 +1,5 @@
 CXX=g++
-CPPFLAGS=-g3 -Wall
+CPPFLAGS=-g3 -Wall -std=c++23
 LDFLAGS=
 
 FOLDER=src

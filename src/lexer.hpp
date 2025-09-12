@@ -1,6 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <string>
 #include <string_view>
 #include "token.hpp"
 
@@ -14,9 +15,14 @@ class Lexer {
  public:
   Lexer(std::string_view source);
 
-  void next_char();  // Process the next character in the source string
-  char peek();       // Look ahead at the next character in the source string without processing
   char get_cursor_char() { return m_cursor_char; }  // Get the character under the cursor
-  Token get_token();                                // Get the next token from the source string
+  char peek();  // Look ahead at the next character in the source string without processing
+
+  void next_char();        // Process the next character in the source string
+  void skip_whitespace();  // Move the cursor over any whitespace characters
+  Token get_token();       // Get the next token from the source string
+
+  void abort(std::string);  // Stop the compilation due to a lexing error
 };
+
 #endif
