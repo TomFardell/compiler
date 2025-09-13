@@ -41,7 +41,6 @@ enum TokenType {
   TOKEN_NEQ,        // Operator: !=
   TOKEN_OR,         // Operator: ||
   TOKEN_PLUS,       // Operator: +
-  TOKEN_QUOTE,      // Operator: '
   TOKEN_RBRACE,     // Operator: }
   TOKEN_RBRACKET,   // Operator: ]
   TOKEN_RPAREN,     // Operator: )

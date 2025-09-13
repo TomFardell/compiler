@@ -79,8 +79,6 @@ Token Lexer::get_token() {
     result = Token{"*", TOKEN_MULTIPLY};
   } else if (m_cursor_char == '+') {
     result = Token{"+", TOKEN_PLUS};
-  } else if (m_cursor_char == '\'') {
-    result = Token{"'", TOKEN_QUOTE};
   } else if (m_cursor_char == '}') {
     result = Token{"}", TOKEN_RBRACE};
   } else if (m_cursor_char == ']') {
@@ -134,12 +132,23 @@ Token Lexer::get_token() {
       abort(std::format("Invalid token '|{}'", peek()));
     }
   }
+  // Literals
+  else if (m_cursor_char == '\"') {
+    int start_pos = m_cursor_pos;
+
+    do {
+      next_char();
+      if (m_cursor_char == '\n') abort("Newline character in string literal");
+    } while (m_cursor_char != '\"');
+
+    result = Token{m_source.substr(start_pos + 1, m_cursor_pos - start_pos - 1), TOKEN_STRING_LITERAL};
+  }
 
   next_char();
   return result;
 }
 
-void Lexer::abort(std::string message) {
-  std::cout << "Compilation aborted: lexer error\n" << message << "\n";
+void Lexer::abort(std::string_view message) {
+  std::cout << "Compilation aborted: lexer error\n-> " << message << "\n";
   exit(EXIT_FAILURE);
 }

@@ -1,7 +1,6 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <string>
 #include <string_view>
 #include "token.hpp"
 
@@ -24,7 +23,7 @@ class Lexer {
   void skip_whitespace_and_comments();  // Move the cursor past any blocks of whitespace and comments
   Token get_token();                    // Get the next token from the source string
 
-  void abort(std::string);  // Stop the compilation due to a lexing error
+  void abort(std::string_view);  // Stop the compilation due to a lexing error
 };
 
 #endif
