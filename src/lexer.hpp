@@ -18,10 +18,11 @@ class Lexer {
   char get_cursor_char() { return m_cursor_char; }  // Get the character under the cursor
   char peek();  // Look ahead at the next character in the source string without processing
 
-  void next_char();        // Process the next character in the source string
-  void skip_whitespace();  // Move the cursor over any whitespace characters
-  void skip_comments();    // Move the cursor past any sections of comments separated by whitespace
-  Token get_token();       // Get the next token from the source string
+  void next_char();                     // Process the next character in the source string
+  void skip_whitespace();               // Move the cursor over any whitespace characters
+  bool skip_comment();                  // Move the cursor past a comment, returning whether a comment was found
+  void skip_whitespace_and_comments();  // Move the cursor past any blocks of whitespace and comments
+  Token get_token();                    // Get the next token from the source string
 
   void abort(std::string);  // Stop the compilation due to a lexing error
 };

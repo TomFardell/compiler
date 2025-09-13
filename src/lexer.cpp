@@ -34,7 +34,7 @@ void Lexer::skip_whitespace() {
   while (m_cursor_char == ' ' || m_cursor_char == '\t' || m_cursor_char == '\n') next_char();
 }
 
-void Lexer::skip_comments() {
+bool Lexer::skip_comment() {
   if (m_cursor_char == '/' && peek() == '*') {
     // Note that C-- does not allow nested comment blocks
     while (!(m_cursor_char == '*' && peek() == '/')) next_char();
@@ -43,16 +43,21 @@ void Lexer::skip_comments() {
     next_char();
     next_char();
 
-    // We have found a comment, so skip whitespace and check for another comment
-    skip_whitespace();
-    skip_comments();
+    return true;
   }
+  return false;
+}
+
+void Lexer::skip_whitespace_and_comments() {
+  skip_whitespace();
+
+  // Repeatedly skip a comment and any whitespace following that comment
+  while (skip_comment()) skip_whitespace();
 }
 
 Token Lexer::get_token() {
-  skip_whitespace();
-  skip_comments();
-  skip_whitespace();
+  skip_whitespace_and_comments();
+
   Token result{"", TOKEN_NULL};
 
   // Single character tokens
