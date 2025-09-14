@@ -4,7 +4,7 @@
 int main() {
   Lexer lexer{
       "+- */ /* comment */  /* Another comment */ == = /* Another another comment */ != > >= < <= ||&& \"This "
-      "is a string\" \"We cannot have newlines\n in strings\""};
+      "is a string\" 2.2 3.90 9102 2, .0"};
 
   while (lexer.get_cursor_char() != '\0') {
     Token this_token{lexer.get_token()};

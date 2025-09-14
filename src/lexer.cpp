@@ -31,7 +31,7 @@ void Lexer::next_char() {
 }
 
 void Lexer::skip_whitespace() {
-  while (m_cursor_char == ' ' || m_cursor_char == '\t' || m_cursor_char == '\n') next_char();
+  while (is_whitespace(m_cursor_char)) next_char();
 }
 
 bool Lexer::skip_comment() {
@@ -134,14 +134,31 @@ Token Lexer::get_token() {
   }
   // Literals
   else if (m_cursor_char == '\"') {
-    int start_pos = m_cursor_pos;
+    int start_pos = m_cursor_pos + 1;  // Start position of the text (excluding the quotes)
 
     do {
       next_char();
       if (m_cursor_char == '\n') abort("Newline character in string literal");
     } while (m_cursor_char != '\"');
 
-    result = Token{m_source.substr(start_pos + 1, m_cursor_pos - start_pos - 1), TOKEN_STRING_LITERAL};
+    result = Token{m_source.substr(start_pos, m_cursor_pos - start_pos), TOKEN_STRING_LITERAL};
+  } else if (is_digit(m_cursor_char)) {
+    int start_pos = m_cursor_pos;
+    int decimal_point_count = 0;
+
+    while (is_digit(peek()) || peek() == '.') {
+      next_char();
+      if (m_cursor_char == '.') {
+        ++decimal_point_count;
+        if (decimal_point_count > 1) abort("Too many decimal points in number");
+        if (!is_digit(peek())) abort("Number with no digits following decimal point");
+      }
+    };
+
+    result = Token{m_source.substr(start_pos, m_cursor_pos - start_pos + 1),
+                   decimal_point_count ? TOKEN_FLOAT_LITERAL : TOKEN_INT_LITERAL};
+  } else {
+    abort(std::format("Unrecognised token starting with '{}'", m_cursor_char));
   }
 
   next_char();
