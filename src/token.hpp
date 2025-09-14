@@ -2,7 +2,7 @@
 #define TOKEN_H
 
 #include <string_view>
-#include <map>
+#include <unordered_map>
 
 enum TokenType {
   TOKEN_NULL,
@@ -48,22 +48,25 @@ enum TokenType {
 
 };
 
-// TokenType lookup for keyword strings
-const std::map<std::string_view, TokenType> token_keyword_lookup = {
-    {"else", TOKEN_ELSE},     {"exit", TOKEN_EXIT},   {"float", TOKEN_FLOAT},
-    {"if", TOKEN_IF},         {"int", TOKEN_INT},     {"read", TOKEN_READ},
-    {"return", TOKEN_RETURN}, {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
-
 class Token {
  private:
-  std::string_view m_text;
-  TokenType m_type;
+  std::string_view m_text;  // Text associated with the token
+  TokenType m_type;         // Type of the token
 
  public:
+  // Constructor with token text and type
   Token(std::string_view text, TokenType type) : m_text{text}, m_type{type} {};
 
-  std::string_view get_text() { return m_text; }  // Get the text associated with the token
-  TokenType get_type() { return m_type; }         // Get the type of the token
+  // Get the text associated with the token
+  std::string_view get_text() { return m_text; }
+  // Get the type of the token
+  TokenType get_type() { return m_type; }
+
+  // TokenType lookup for keyword strings
+  inline static const std::unordered_map<std::string_view, TokenType> keywords{
+      {"else", TOKEN_ELSE},     {"exit", TOKEN_EXIT},   {"float", TOKEN_FLOAT},
+      {"if", TOKEN_IF},         {"int", TOKEN_INT},     {"read", TOKEN_READ},
+      {"return", TOKEN_RETURN}, {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
 };
 
 #endif

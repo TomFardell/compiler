@@ -60,7 +60,6 @@ Token Lexer::get_token() {
 
   Token result{"", TOKEN_NULL};
 
-  // Single character tokens
   if (m_cursor_char == '\0') {
     result = Token{"", TOKEN_EOF};
   } else if (m_cursor_char == ',') {
@@ -87,9 +86,7 @@ Token Lexer::get_token() {
     result = Token{")", TOKEN_RPAREN};
   } else if (m_cursor_char == ';') {
     result = Token{";", TOKEN_SEMICOLON};
-  }
-  // (Potential) double character tokens
-  else if (m_cursor_char == '&') {
+  } else if (m_cursor_char == '&') {
     if (peek() == '&') {
       result = Token{"&&", TOKEN_AND};
       next_char();
@@ -131,9 +128,7 @@ Token Lexer::get_token() {
     } else {
       abort(std::format("Invalid token '|{}'", peek()));
     }
-  }
-  // Literals
-  else if (m_cursor_char == '\"') {
+  } else if (m_cursor_char == '\"') {  // String literals
     int start_pos = m_cursor_pos + 1;  // Start position of the text (excluding the quotes)
 
     do {
@@ -142,7 +137,7 @@ Token Lexer::get_token() {
     } while (m_cursor_char != '\"');
 
     result = Token{m_source.substr(start_pos, m_cursor_pos - start_pos), TOKEN_STRING_LITERAL};
-  } else if (is_digit(m_cursor_char)) {
+  } else if (is_digit(m_cursor_char)) {  // Integer and float literals
     int start_pos = m_cursor_pos;
     int decimal_point_count = 0;
 
@@ -157,7 +152,19 @@ Token Lexer::get_token() {
 
     result = Token{m_source.substr(start_pos, m_cursor_pos - start_pos + 1),
                    decimal_point_count ? TOKEN_FLOAT_LITERAL : TOKEN_INT_LITERAL};
-  } else {
+  } else if (is_alpha(m_cursor_char)) {  // Identifiers and keywords (C-- identifiers cannot begin with underscore)
+    int start_pos = m_cursor_pos;
+
+    while (is_id_char(peek())) next_char();
+
+    std::string_view identifier_name = m_source.substr(start_pos, m_cursor_pos - start_pos + 1);
+
+    if (Token::keywords.contains(identifier_name)) {
+      result = Token{identifier_name, Token::keywords.at(identifier_name)};
+    } else {
+      result = Token{identifier_name, TOKEN_IDENTIFIER};
+    }
+  } else {  // Anything else is invalid
     abort(std::format("Unrecognised token starting with '{}'", m_cursor_char));
   }
 
