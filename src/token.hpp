@@ -20,10 +20,11 @@ enum TokenType {
   TOKEN_INT,
   TOKEN_READ,
   TOKEN_RETURN,
+  TOKEN_VOID,
   TOKEN_WHILE,
   TOKEN_WRITE,
 
-  // Operators
+  // Operators and symbols
   TOKEN_AND,        // Operator: &&
   TOKEN_ASSIGN,     // Operator: =
   TOKEN_COMMA,      // Operator: ,
@@ -31,20 +32,21 @@ enum TokenType {
   TOKEN_EQ,         // Operator: ==
   TOKEN_GE,         // Operator: >=
   TOKEN_GT,         // Operator: >
-  TOKEN_LBRACE,     // Operator: {
-  TOKEN_LBRACKET,   // Operator: [
+  TOKEN_LBRACE,     // Symbol:   {
+  TOKEN_LBRACKET,   // Symbol:   [
   TOKEN_LE,         // Operator: <=
-  TOKEN_LPAREN,     // Operator: (
+  TOKEN_LPAREN,     // Symbol:   (
   TOKEN_LT,         // Operator: <
   TOKEN_MINUS,      // Operator: -
   TOKEN_MULTIPLY,   // Operator: *
   TOKEN_NEQ,        // Operator: !=
+  TOKEN_NOT,        // Operator: !
   TOKEN_OR,         // Operator: ||
   TOKEN_PLUS,       // Operator: +
-  TOKEN_RBRACE,     // Operator: }
-  TOKEN_RBRACKET,   // Operator: ]
-  TOKEN_RPAREN,     // Operator: )
-  TOKEN_SEMICOLON,  // Operator: ;
+  TOKEN_RBRACE,     // Symbol:   }
+  TOKEN_RBRACKET,   // Symbol:   ]
+  TOKEN_RPAREN,     // Symbol:   )
+  TOKEN_SEMICOLON,  // Symbol:   ;
 
 };
 
@@ -64,9 +66,9 @@ class Token {
 
   // TokenType lookup for keyword strings
   inline static const std::unordered_map<std::string_view, TokenType> keywords{
-      {"else", TOKEN_ELSE},     {"exit", TOKEN_EXIT},   {"float", TOKEN_FLOAT},
-      {"if", TOKEN_IF},         {"int", TOKEN_INT},     {"read", TOKEN_READ},
-      {"return", TOKEN_RETURN}, {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
+      {"else", TOKEN_ELSE},   {"exit", TOKEN_EXIT},  {"float", TOKEN_FLOAT},   {"if", TOKEN_IF},
+      {"int", TOKEN_INT},     {"read", TOKEN_READ},  {"return", TOKEN_RETURN}, {"void", TOKEN_VOID},
+      {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
 };
 
 #endif

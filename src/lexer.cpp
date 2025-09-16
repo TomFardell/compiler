@@ -124,7 +124,7 @@ Token Lexer::get_token() {
       result = Token{"!=", TOKEN_NEQ};
       next_char();
     } else {
-      abort(std::format("Invalid token '!{}", peek()));
+      result = Token{"!", TOKEN_NOT};
     }
   } else if (m_cursor_char == '|') {
     if (peek() == '|') {
