@@ -6,6 +6,11 @@
 #include "lexer.hpp"
 #include "token.hpp"
 
+void Lexer::abort(std::string_view message) {
+  std::cout << "Compilation aborted: lexer error\n-> " << message << "\n";
+  exit(EXIT_FAILURE);
+}
+
 Lexer::Lexer(std::string_view source)
     : m_source{source},
       m_source_length{static_cast<int>(std::size(m_source))},
@@ -170,9 +175,4 @@ Token Lexer::get_token() {
 
   next_char();
   return result;
-}
-
-void Lexer::abort(std::string_view message) {
-  std::cout << "Compilation aborted: lexer error\n-> " << message << "\n";
-  exit(EXIT_FAILURE);
 }

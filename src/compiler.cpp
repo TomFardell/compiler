@@ -1,15 +1,17 @@
-#include <iostream>
 #include "lexer.hpp"
+#include "parser.hpp"
+#include "token.hpp"
 
 int main() {
-  Lexer lexer{
-      "+- */ /* comment */  /* Another comment */ == = /* Another another comment */ != > >= < <= ||&& \"This "
-      "is a string\" 2.2 3.90 9102 2, else exit float if int read return while write my_var my_var2 _not_allowed"};
+  Lexer lexer{"+- */ /* comment */  /* Another comment */ =="};
+  Parser parser{lexer, true};
 
-  while (lexer.get_cursor_char() != '\0') {
-    Token this_token{lexer.get_token()};
-    std::cout << this_token.get_type() << " '" << this_token.get_text() << "'\n";
-  }
+  // Should run with no parser abort
+  parser.match_token(TOKEN_PLUS);
+  parser.match_token(TOKEN_MINUS);
+  parser.match_token(TOKEN_MULTIPLY);
+  parser.match_token(TOKEN_DIVIDE);
+  parser.match_token(TOKEN_EQ);
 
   return 0;
 }
