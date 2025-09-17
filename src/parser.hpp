@@ -3,17 +3,18 @@
 
 #include "lexer.hpp"
 #include "token.hpp"
+#include <vector>
 
 class Parser {
  private:
-  Lexer &m_lexer;            // Reference to the lexer
-  Token m_curr_token;        // Current token parsed
-  Token m_next_token;        // Peek at the next token to be parsed
-  const bool m_print_debug;  // Whether to print debug messages during parsing
+  Lexer &m_lexer;               // Reference to the lexer
+  std::vector<Token> m_tokens;  // Vector of tokens
+  int m_cursor_pos;             // Position of the cursor through the vector of tokens
+  const bool m_print_debug;     // Whether to print debug messages during parsing
 
   /*---------*/
   /* Grammar */
-  /*--------------------------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------------------------*/
 
   // Notation for comments underneath:
   // {}   matches 0 or more of its contents
@@ -90,7 +91,7 @@ class Parser {
   //       | tkn_or
   void logical_operation();
 
-  /*--------------------------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------------------------*/
 
   // Stop the compilation due to a parsing error
   void abort(std::string_view);
@@ -98,10 +99,12 @@ class Parser {
  public:
   // Constructor taking a reference to the lexer and bool for whether to print debug text
   Parser(Lexer &lexer, bool print_debug);
-  // Try to match and pass over a token of type `token_type`, aborting if not found
+  // Try to match and pass over a token of the given type, aborting if not found
   void match_token(TokenType token_type);
-  // Move forwards one token
+  // Move the cursor forwards by one token
   void next_token();
+  // Look ahead by a given number of tokens, returning a reference to the found token
+  Token &peek_token(int n);
 };
 
 #endif
