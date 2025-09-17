@@ -7,18 +7,14 @@ int main() {
   Lexer lexer{"+- */ /* comment */  /* Another comment */ =="};
   Parser parser{lexer, true};
 
-  for (int i = 0; i < 10; i++) {
-    Token &tkn{parser.peek_token(i)};
-    std::cout << tkn.get_type() << ": '" << tkn.get_text() << "'\n";
-  }
+  parser.move_cursor(0);
+  std::cout << parser.check_cursor_token(TOKEN_PLUS);
 
-  // Should run without errors
-  parser.match_token(TOKEN_PLUS);
-  parser.match_token(TOKEN_MINUS);
-  parser.match_token(TOKEN_MULTIPLY);
-  parser.match_token(TOKEN_DIVIDE);
-  parser.match_token(TOKEN_EQ);
-  parser.match_token(TOKEN_EOF);
+  parser.move_cursor(3);
+  std::cout << parser.check_cursor_token(TOKEN_DIVIDE);
+
+  parser.move_cursor(2);
+  std::cout << parser.check_cursor_token(TOKEN_MULTIPLY) << " = 111\n";
 
   return 0;
 }

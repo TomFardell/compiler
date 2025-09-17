@@ -16,7 +16,13 @@ class Parser {
   /* Grammar */
   /*-------------------------------------------------------------------------------------------------------------*/
 
-  // Notation for comments underneath:
+  // Grammar functions work as follows:
+  // Each function tries to match one of its rules. It goes through each rule and returns 'true' if the rule
+  // matches, moving the cursor forwards through those tokens. If a rule does not match, it moves to the next rule.
+  // If no rule matches, that function returns 'false'. Some functions can abort the parser, but only if they find
+  // a sequence of tokens or consecutive rules that in no circumstances would match the grammar
+
+  // Grammar notation in below comments:
   // {}   matches 0 or more of its contents
   // []   matches 0 or 1 of its contents
   // ()   is just for grouping
@@ -25,29 +31,30 @@ class Parser {
   // ...  continues the statement of the previous line
 
   // prog: {(decl tkn_semi) | func}
-  void program();
+  bool program();
 
   // decl: type var_decl {tkn_comma var_decl}
-  //     | (type | tkn_void) id tkn_lparen param_types tkn_rparen {tkn_comma id tkn_lparen param_types tkn_rparen}
-  void declaration();
+  //     | (type | tkn_void) tkn_id tkn_lparen param_types
+  //       ... tkn_rparen {tkn_comma tkn_id tkn_lparen param_types tkn_rparen}
+  bool declaration();
 
   // var_decl: tkn_id [arr_decl_suff]
-  void variable_declaration();
+  bool variable_declaration();
 
-  // type: tkn_flt
-  //     | tkn_int
-  void type();
-
-  // param_types: void
+  // param_types: bool
   //            | type tkn_id [arr_decl_suff] {tkn_comma type tkn_id [arr_decl_suff]}
-  void param_types();
+  bool param_types();
 
   // arr_decl_suff: tkn_lbracket tkn_int_lit tkn_rbracket
-  void array_declaration_suffix();
+  bool array_declaration_suffix();
 
   // func: (type | tkn_void) tkn_id tkn_lparen param_types tkn_rparen
   //       ... tkn_lbrace {type var_decl {tkn_comma var_decl} tkn_semi {stmnt}} tkn_rbrace
-  void function();
+  bool function();
+
+  // type: tkn_flt
+  //     | tkn_int
+  bool type();
 
   // stmnt: tkn_if tkn_lparen expr tkn_rparen [tkn_else stmt]
   //      | tkn_while tkn_lparen expr tkn_rparen stmt
@@ -56,10 +63,10 @@ class Parser {
   //      | tkn_id tkn_lparen [expr {tkn_comma expr}] tkn_rparen tkn_semi
   //      | tkn_lbrace stmt tkn_rbrace
   //      | tkn_semi
-  void statement();
+  bool statement();
 
   // assgn: tkn_id [tkn_lbracket expr tkn_rbracket] tkn_assgn expr
-  void assignment();
+  bool assignment();
 
   // expr: tkn_minus expr
   //     | tkn_not expr
@@ -71,13 +78,13 @@ class Parser {
   //     | tkn_float_lit
   //     | tkn_int_lit
   //     | tkn_str_lit
-  void expression();
+  bool expression();
 
   // bin_op: tkn_add
   //       | tkn_min
   //       | tkn_mul
   //       | tkn_div
-  void binary_operation();
+  bool binary_operator();
 
   // rel_op: tkn_eq
   //       | tkn_neq
@@ -85,11 +92,11 @@ class Parser {
   //       | tkn_le
   //       | tkn_gt
   //       | tkn_ge
-  void relational_operation();
+  bool relational_operator();
 
   // log_op: tkn_and
   //       | tkn_or
-  void logical_operation();
+  bool logical_operator();
 
   /*-------------------------------------------------------------------------------------------------------------*/
 
@@ -99,12 +106,12 @@ class Parser {
  public:
   // Constructor taking a reference to the lexer and bool for whether to print debug text
   Parser(Lexer &lexer, bool print_debug);
-  // Try to match and pass over a token of the given type, aborting if not found
-  void match_token(TokenType token_type);
+  // Check whether the token under the cursor is of the given type
+  bool check_cursor_token(TokenType token_type) { return m_tokens[m_cursor_pos].get_type() == token_type; };
   // Move the cursor forwards by one token
   void next_token();
-  // Look ahead by a given number of tokens, returning a reference to the found token
-  Token &peek_token(int n);
+  // Move cursor to the given index
+  void move_cursor(int idx);
 };
 
 #endif
