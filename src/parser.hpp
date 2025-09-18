@@ -19,8 +19,9 @@ class Parser {
   // Grammar functions work as follows:
   // Each function tries to match one of its rules. It goes through each rule and returns 'true' if the rule
   // matches, moving the cursor forwards through those tokens. If a rule does not match, it moves to the next rule.
-  // If no rule matches, that function returns 'false'. Some functions can abort the parser, but only if they find
-  // a sequence of tokens or consecutive rules that in no circumstances would match the grammar
+  // If no rule matches, that function returns 'false' and moves the cursor back to the position it was at on entry
+  // to the function. Some functions can abort the parser, but only if they find a sequence of tokens or
+  // consecutive rules that in no circumstances would match the grammar
 
   // Grammar notation in below comments:
   // {}   matches 0 or more of its contents
@@ -38,25 +39,25 @@ class Parser {
   //       ... tkn_rparen {tkn_comma tkn_id tkn_lparen param_types tkn_rparen}
   bool declaration();
 
+  // param_types: tkn_void
+  //            | type tkn_id [arr_decl_suff] {tkn_comma type tkn_id [arr_decl_suff]}
+  bool parameter_types();
+
+  // func: (type | tkn_void) tkn_id tkn_lparen param_types tkn_rparen
+  //       ... tkn_lbrace {type var_decl {tkn_comma var_decl} tkn_semi} {stmnt} tkn_rbrace
+  bool function();
+
   // var_decl: tkn_id [arr_decl_suff]
   bool variable_declaration();
 
-  // param_types: bool
-  //            | type tkn_id [arr_decl_suff] {tkn_comma type tkn_id [arr_decl_suff]}
-  bool param_types();
-
   // arr_decl_suff: tkn_lbracket tkn_int_lit tkn_rbracket
   bool array_declaration_suffix();
-
-  // func: (type | tkn_void) tkn_id tkn_lparen param_types tkn_rparen
-  //       ... tkn_lbrace {type var_decl {tkn_comma var_decl} tkn_semi {stmnt}} tkn_rbrace
-  bool function();
 
   // type: tkn_flt
   //     | tkn_int
   bool type();
 
-  // stmnt: tkn_if tkn_lparen expr tkn_rparen [tkn_else stmt]
+  // stmnt: tkn_if tkn_lparen expr tkn_rparen stmt [tkn_else stmt]
   //      | tkn_while tkn_lparen expr tkn_rparen stmt
   //      | tkn_return [expr] tkn_semi
   //      | assgn tk_semi
@@ -68,7 +69,7 @@ class Parser {
   // assgn: tkn_id [tkn_lbracket expr tkn_rbracket] tkn_assgn expr
   bool assignment();
 
-  // expr: tkn_minus expr
+  // expr: tkn_min expr
   //     | tkn_not expr
   //     | expr bin_op expr
   //     | expr rel_op expr
@@ -80,7 +81,7 @@ class Parser {
   //     | tkn_str_lit
   bool expression();
 
-  // bin_op: tkn_add
+  // bin_op: tkn_plus
   //       | tkn_min
   //       | tkn_mul
   //       | tkn_div
@@ -98,6 +99,9 @@ class Parser {
   //       | tkn_or
   bool logical_operator();
 
+  // Read one token of the given type
+  bool token(TokenType token_type);
+
   /*-------------------------------------------------------------------------------------------------------------*/
 
   // Stop the compilation due to a parsing error
@@ -106,12 +110,13 @@ class Parser {
  public:
   // Constructor taking a reference to the lexer and bool for whether to print debug text
   Parser(Lexer &lexer, bool print_debug);
-  // Check whether the token under the cursor is of the given type
-  bool check_cursor_token(TokenType token_type) { return m_tokens[m_cursor_pos].get_type() == token_type; };
   // Move the cursor forwards by one token
   void next_token();
   // Move cursor to the given index
-  void move_cursor(int idx);
+  void move_cursor_back_to(int idx);
+
+  // Parse all tokens. For now, just print whether the source code is a valid program
+  void parse();
 };
 
 #endif
