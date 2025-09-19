@@ -8,7 +8,7 @@
 
 void Lexer::abort(std::string_view message) {
   std::cout << "Compilation aborted: lexer error\n-> " << message << "\n";
-  exit(EXIT_FAILURE);
+  std::exit(EXIT_FAILURE);
 }
 
 Lexer::Lexer(std::string_view source)

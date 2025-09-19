@@ -364,7 +364,7 @@ bool Parser::token(TokenType token_type) {
 
 void Parser::abort(std::string_view message) {
   std::cout << "Compilation aborted: parser error\n-> " << message << "\n";
-  exit(EXIT_FAILURE);
+  std::exit(EXIT_FAILURE);
 }
 
 Parser::Parser(Lexer &lexer, bool print_debug)
