@@ -134,7 +134,15 @@ bool Parser::array_declaration_suffix() {
   return false;
 }
 
-bool Parser::type() { return (token(TOKEN_FLOAT) || token(TOKEN_INT)); }
+bool Parser::type() {
+  if (token(TOKEN_FLOAT) || token(TOKEN_INT)) {
+    if (m_print_debug) std::cout << "type\n";
+
+    return true;
+  }
+
+  return false;
+}
 
 bool Parser::statement() {
   int entry_cursor_pos{m_cursor_pos};

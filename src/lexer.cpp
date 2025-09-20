@@ -162,7 +162,7 @@ Token Lexer::get_token() {
 
     while (is_id_char(peek())) next_char();
 
-    std::string_view identifier_name = m_source.substr(start_pos, m_cursor_pos - start_pos + 1);
+    std::string_view identifier_name{m_source.substr(start_pos, m_cursor_pos - start_pos + 1)};
 
     if (Token::keywords.contains(identifier_name)) {
       result = Token{identifier_name, Token::keywords.at(identifier_name)};
