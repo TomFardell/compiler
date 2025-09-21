@@ -150,23 +150,16 @@ bool Parser::statement() {
   // If statement
   if (token(TOKEN_IF)) {
     if (!token(TOKEN_LPAREN)) abort("Expected '(' after 'if' in if statement");
+    if (!expression()) abort("Expected expression after '(' in if statement");
+    if (!token(TOKEN_RPAREN)) abort("Expected ')' after expression in if statement");
 
-    // Search for an expression immediately followed by a closing parenthesis
-    for (int expression_skips{0}, if_expression_cursor_pos{m_cursor_pos}; expression(expression_skips);
-         ++expression_skips, move_cursor_back_to(if_expression_cursor_pos)) {
-      if (token(TOKEN_RPAREN)) {
-        if (!statement()) abort("Expected statement after condition in if statement");
-        if (token(TOKEN_ELSE)) {
-          if (!statement()) abort("Expected statement after 'else' in if statement");
-        }
-
-        if (m_print_debug) std::cout << "if statement\n";
-        return true;
-      }
+    if (!statement()) abort("Expected statement after condition in if statement");
+    if (token(TOKEN_ELSE)) {
+      if (!statement()) abort("Expected statement after 'else' in if statement");
     }
 
-    // No expression was found
-    abort("Expected expression in if statement");
+    if (m_print_debug) std::cout << "if statement\n";
+    return true;
   }
 
   // While statement
@@ -260,21 +253,85 @@ bool Parser::assignment() {
   return false;
 }
 
-bool Parser::expression(int num_skips) {
+bool Parser::expression() {
   int entry_cursor_pos{m_cursor_pos};
 
-  // Literal (this comes first as otherwise this function always calls itself)
-  if (token(TOKEN_FLOAT_LITERAL) || token(TOKEN_INT_LITERAL) || token(TOKEN_STRING_LITERAL)) {
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "literal expression\n";
+  // Parenthesised expression
+  if (token(TOKEN_LPAREN)) {
+    if (!expression()) abort("Expected expression after '('");
+    if (!token(TOKEN_RPAREN)) abort("Expected ')' after expression");
+
+    // Greedily search for an operator
+    if (binary_operator() || relational_operator() || logical_operator()) {
+      if (!expression()) abort("Expected expression after operator");
+
+      if (m_print_debug) std::cout << "operator expression\n";
       return true;
     }
+
+    if (m_print_debug) std::cout << "parenthesised expression\n";
+    return true;
   }
 
-  // Variable, function call or array element
+  // Negative expression
+  move_cursor_back_to(entry_cursor_pos);
+  if (token(TOKEN_MINUS)) {
+    if (!expression()) abort("Expected expression after '-");
+
+    // Greedily search for an operator
+    if (binary_operator() || relational_operator() || logical_operator()) {
+      if (!expression()) abort("Expected expression after operator");
+
+      if (m_print_debug) std::cout << "operator expression\n";
+      return true;
+    }
+
+    if (m_print_debug) std::cout << "negative expression\n";
+    return true;
+  }
+
+  // Negated expression
+  move_cursor_back_to(entry_cursor_pos);
+  if (token(TOKEN_NOT)) {
+    if (!expression()) abort("Expected expression after '!'");
+
+    // Greedily search for an operator
+    if (binary_operator() || relational_operator() || logical_operator()) {
+      if (!expression()) abort("Expected expression after operator");
+
+      if (m_print_debug) std::cout << "operator expression\n";
+      return true;
+    }
+
+    if (m_print_debug) std::cout << "negated expression\n";
+    return true;
+  }
+
+  // Expressions beginning with a literal
+  move_cursor_back_to(entry_cursor_pos);
+  if (token(TOKEN_FLOAT_LITERAL) || token(TOKEN_INT_LITERAL) || token(TOKEN_STRING_LITERAL)) {
+    // Greedily search for an operator
+    if (binary_operator() || relational_operator() || logical_operator()) {
+      if (!expression()) abort("Expected expression after operator");
+
+      if (m_print_debug) std::cout << "operator expression\n";
+      return true;
+    }
+
+    // Only accept lone literal expression if no operator was found afterwards
+    if (m_print_debug) std::cout << "literal expression\n";
+    return true;
+  }
+
+  // Expressions beginning with an identifier
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_IDENTIFIER)) {
-    // Function call
+    // Instead of immediately returning true if an identifier is found, set these and perform a greedy operator
+    // check before returning
+    bool identifier_expression_found{false};
+    std::string_view identifier_expression_debug_message;  // Just for debug printing
+
+    // Function call identifier
     if (token(TOKEN_LPAREN)) {
       if (expression()) {
         while (token(TOKEN_COMMA)) {
@@ -284,73 +341,44 @@ bool Parser::expression(int num_skips) {
 
       if (!token(TOKEN_RPAREN)) abort("Expected ')' at end of function call");
 
-      if (num_skips-- == 0) {
-        if (m_print_debug) std::cout << "function call expression\n";
-        return true;
-      }
+      identifier_expression_debug_message = "function call expression\n";
+      identifier_expression_found = true;
     }
 
-    // Array element
-    if (token(TOKEN_LBRACKET)) {
+    // Array element identifier
+    if (!identifier_expression_found && token(TOKEN_LBRACKET)) {
       if (!expression()) abort("Expected expression after '['");
       if (!token(TOKEN_RBRACKET)) abort("Expected ']' in expression");
 
-      if (num_skips-- == 0) {
-        if (m_print_debug) std::cout << "array element expression\n";
-        return true;
-      }
+      identifier_expression_debug_message = "array element expression\n";
+      identifier_expression_found = true;
     }
 
-    // Variable
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "variable expression\n";
+    // Otherwise must be a variable identifier
+    if (!identifier_expression_found) {
+      identifier_expression_debug_message = "variable expression\n";
+      identifier_expression_found = true;
+    }
+
+    // Greedily search for an operator
+    if (binary_operator() || relational_operator() || logical_operator()) {
+      if (!expression()) abort("Expected expression after operator");
+
+      if (m_print_debug) std::cout << "operator expression\n";
       return true;
     }
+
+    if (m_print_debug) std::cout << identifier_expression_debug_message;
+    return true;
   }
 
-  // Negative expression
-  move_cursor_back_to(entry_cursor_pos);
-  if (token(TOKEN_MINUS)) {
-    if (!expression()) abort("Expected expression after '-");
-
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "negative expression\n";
-      return true;
-    }
-  }
-
-  // Negated expression
-  move_cursor_back_to(entry_cursor_pos);
-  if (token(TOKEN_NOT)) {
-    if (!expression()) abort("Expected expression after '!'");
-
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "negated expression\n";
-      return true;
-    }
-  }
-
-  // Operation on two expressions
+  // Operator where first operand is a full expression (i.e. not a literal or identifier)
   move_cursor_back_to(entry_cursor_pos);
   if (expression() && (binary_operator() || relational_operator() || logical_operator())) {
     if (!expression()) abort("Expected expression after operator");
 
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "operator expression\n";
-      return true;
-    }
-  }
-
-  // Parenthesised expression
-  move_cursor_back_to(entry_cursor_pos);
-  if (token(TOKEN_LPAREN)) {
-    if (!expression()) abort("Expected expression after '('");
-    if (!token(TOKEN_RPAREN)) abort("Expected ')' after expression");
-
-    if (num_skips-- == 0) {
-      if (m_print_debug) std::cout << "parenthesised expression\n";
-      return true;
-    }
+    if (m_print_debug) std::cout << "operator expression\n";
+    return true;
   }
 
   move_cursor_back_to(entry_cursor_pos);
