@@ -79,7 +79,8 @@ class Parser {
   //     | tkn_float_lit
   //     | tkn_int_lit
   //     | tkn_str_lit
-  bool expression();
+  // `num_skips` tells the function how many valid expressions to skip before returning to allow for recalling
+  bool expression(int num_skips = 0);
 
   // bin_op: tkn_plus
   //       | tkn_min
