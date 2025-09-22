@@ -62,8 +62,8 @@ class Parser {
   //      | tkn_return [expr] tkn_semi
   //      | tkn_read tkn_lparen tk_id tkn_rparen tkn_semi
   //      | tkn_write tkn_lparen (tkn_str_lit | expr) tkn_rparen tkn_semi
-  //      | assgn tk_semi
   //      | tkn_id tkn_lparen [expr {tkn_comma expr}] tkn_rparen tkn_semi
+  //      | assgn tk_semi
   //      | tkn_lbrace stmt tkn_rbrace
   //      | tkn_semi
   bool statement();
@@ -71,13 +71,13 @@ class Parser {
   // assgn: tkn_id [tkn_lbracket expr tkn_rbracket] tkn_assgn expr
   bool assignment();
 
-  // expr: tkn_min expr
+  // expr: tkn_lparen expr tk_rparen
+  //     | tkn_min expr
   //     | tkn_not expr
+  //     | tkn_id [(tkn_lparen [expr {tkn_comma expr}] tkn_rparen) | (tkn_lbracket expr tkn_rbracket)]
   //     | expr bin_op expr
   //     | expr rel_op expr
   //     | expr log_op expr
-  //     | tkn_id [(tkn_lparen [expr {tkn_comma expr}] tkn_rparen) | (tkn_lbracket expr tkn_rbracket)]
-  //     | tkn_lparen expr tk_rparen
   //     | tkn_float_lit
   //     | tkn_int_lit
   //     | tkn_str_lit

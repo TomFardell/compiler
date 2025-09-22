@@ -212,20 +212,9 @@ bool Parser::statement() {
     return true;
   }
 
-  // Assignment statement
-  move_cursor_back_to(entry_cursor_pos);
-  if (assignment()) {
-    if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after assignment in assignment statement");
-
-    if (m_print_debug) std::cout << "assignment statement\n";
-    return true;
-  }
-
   // Function call statement
   move_cursor_back_to(entry_cursor_pos);
-  if (token(TOKEN_IDENTIFIER)) {
-    // TODO: Check this is okay if another valid grammar rule starts with an identifier
-    if (!token(TOKEN_LPAREN)) abort("Expected '(' after function name in statement");
+  if (token(TOKEN_IDENTIFIER) && token(TOKEN_LPAREN)) {
     if (expression()) {
       while (token(TOKEN_COMMA)) {
         if (!expression()) abort("Expected expression after ','");
@@ -235,6 +224,15 @@ bool Parser::statement() {
     if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after function call in statement");
 
     if (m_print_debug) std::cout << "function call statement\n";
+    return true;
+  }
+
+  // Assignment statement
+  move_cursor_back_to(entry_cursor_pos);
+  if (assignment()) {
+    if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after assignment in assignment statement");
+
+    if (m_print_debug) std::cout << "assignment statement\n";
     return true;
   }
 
@@ -309,14 +307,6 @@ bool Parser::expression() {
   if (token(TOKEN_MINUS)) {
     if (!expression()) abort("Expected expression after '-");
 
-    // Greedily search for an operator
-    if (binary_operator() || relational_operator() || logical_operator()) {
-      if (!expression()) abort("Expected expression after operator");
-
-      if (m_print_debug) std::cout << "operator expression\n";
-      return true;
-    }
-
     if (m_print_debug) std::cout << "negative expression\n";
     return true;
   }
@@ -325,14 +315,6 @@ bool Parser::expression() {
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_NOT)) {
     if (!expression()) abort("Expected expression after '!'");
-
-    // Greedily search for an operator
-    if (binary_operator() || relational_operator() || logical_operator()) {
-      if (!expression()) abort("Expected expression after operator");
-
-      if (m_print_debug) std::cout << "operator expression\n";
-      return true;
-    }
 
     if (m_print_debug) std::cout << "negated expression\n";
     return true;
@@ -357,11 +339,6 @@ bool Parser::expression() {
   // Expressions beginning with an identifier
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_IDENTIFIER)) {
-    // Instead of immediately returning true if an identifier is found, set these and perform a greedy operator
-    // check before returning
-    bool identifier_expression_found{false};
-    std::string_view identifier_expression_debug_message;  // Just for debug printing
-
     // Function call identifier
     if (token(TOKEN_LPAREN)) {
       if (expression()) {
@@ -372,23 +349,27 @@ bool Parser::expression() {
 
       if (!token(TOKEN_RPAREN)) abort("Expected ')' at end of function call");
 
-      identifier_expression_debug_message = "function call expression\n";
-      identifier_expression_found = true;
+      // Greedily search for an operator
+      if (binary_operator() || relational_operator() || logical_operator()) {
+        if (!expression()) abort("Expected expression after operator");
+
+        if (m_print_debug) std::cout << "operator expression\n";
+        return true;
+      }
     }
 
     // Array element identifier
-    if (!identifier_expression_found && token(TOKEN_LBRACKET)) {
+    if (token(TOKEN_LBRACKET)) {
       if (!expression()) abort("Expected expression after '['");
       if (!token(TOKEN_RBRACKET)) abort("Expected ']' in expression");
 
-      identifier_expression_debug_message = "array element expression\n";
-      identifier_expression_found = true;
-    }
+      // Greedily search for an operator
+      if (binary_operator() || relational_operator() || logical_operator()) {
+        if (!expression()) abort("Expected expression after operator");
 
-    // Otherwise must be a variable identifier
-    if (!identifier_expression_found) {
-      identifier_expression_debug_message = "variable expression\n";
-      identifier_expression_found = true;
+        if (m_print_debug) std::cout << "operator expression\n";
+        return true;
+      }
     }
 
     // Greedily search for an operator
@@ -399,7 +380,7 @@ bool Parser::expression() {
       return true;
     }
 
-    if (m_print_debug) std::cout << identifier_expression_debug_message;
+    if (m_print_debug) std::cout << "variable expression\n";
     return true;
   }
 
