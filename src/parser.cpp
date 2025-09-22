@@ -91,6 +91,8 @@ bool Parser::function() {
       while (token(TOKEN_COMMA)) {
         if (!variable_declaration()) abort("Expected variable declaration after ','");
       }
+
+      if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after declaration");
     }
 
     while (statement());
@@ -241,8 +243,12 @@ bool Parser::assignment() {
       if (!token(TOKEN_RBRACKET)) abort("Expected ']' after expression in assignment");
     }
 
-    // TODO: Check if this should just return false
-    if (!token(TOKEN_ASSIGN)) abort("Expected '=' in assignment");
+    // Don't abort as this would be erroneous in the case of a lone function call
+    if (!token(TOKEN_ASSIGN)) {
+      move_cursor_back_to(entry_cursor_pos);
+      return false;
+    }
+
     if (!expression()) abort("Expected expression after '=' in assignment");
 
     if (m_print_debug) std::cout << "assignment\n";
@@ -372,15 +378,6 @@ bool Parser::expression() {
     return true;
   }
 
-  // Operator where first operand is a full expression (i.e. not a literal or identifier)
-  move_cursor_back_to(entry_cursor_pos);
-  if (expression() && (binary_operator() || relational_operator() || logical_operator())) {
-    if (!expression()) abort("Expected expression after operator");
-
-    if (m_print_debug) std::cout << "operator expression\n";
-    return true;
-  }
-
   move_cursor_back_to(entry_cursor_pos);
   return false;
 }
@@ -415,8 +412,11 @@ bool Parser::logical_operator() {
 
 bool Parser::token(TokenType token_type) {
   if (m_tokens[m_cursor_pos].get_type() == token_type) {  // Token matches
+    if (m_print_debug)
+      std::cout << "token " << Token::type_names.at(token_type) << ": '" << m_tokens[m_cursor_pos].get_text()
+                << "'\n";
     next_token();
-    if (m_print_debug) std::cout << "token (" << Token::type_names.at(token_type) << ")\n";
+
     return true;
   } else {  // Token does not match
     return false;
@@ -447,11 +447,6 @@ void Parser::move_cursor_back_to(int idx) {
     abort(std::format("Cannot move cursor forwards from %d to %d", m_cursor_pos, idx));
   }
 
-  // TODO: Remove this
-#if 0
-  std::cout << "Cursor moved from " << m_cursor_pos << " to " << idx << " (type = " << m_tokens[idx].get_type()
-            << ")\n";
-#endif
   m_cursor_pos = idx;
 }
 
