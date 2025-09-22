@@ -187,6 +187,31 @@ bool Parser::statement() {
     return true;
   }
 
+  // Read statement
+  move_cursor_back_to(entry_cursor_pos);
+  if (token(TOKEN_READ)) {
+    if (!token(TOKEN_LPAREN)) abort("Expected '(' after 'read' in read statement");
+    if (!token(TOKEN_IDENTIFIER)) abort("Expected identifier after '(' in read statement");
+    if (!token(TOKEN_RPAREN)) abort("Expected '(' after identifier in read statement");
+    if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after ')' in read statement");
+
+    if (m_print_debug) std::cout << "read statement\n";
+    return true;
+  }
+
+  // Write statement
+  move_cursor_back_to(entry_cursor_pos);
+  if (token(TOKEN_WRITE)) {
+    if (!token(TOKEN_LPAREN)) abort("Expected '(' after 'write' in write statement");
+    if (!(token(TOKEN_STRING_LITERAL) || expression()))
+      abort("Expected string literal or expression after '(' in write statement");
+    if (!token(TOKEN_RPAREN)) abort("Expected '(' after identifier in write statement");
+    if (!token(TOKEN_SEMICOLON)) abort("Expected ';' after ')' in write statement");
+
+    if (m_print_debug) std::cout << "write statement\n";
+    return true;
+  }
+
   // Assignment statement
   move_cursor_back_to(entry_cursor_pos);
   if (assignment()) {

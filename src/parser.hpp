@@ -60,6 +60,8 @@ class Parser {
   // stmnt: tkn_if tkn_lparen expr tkn_rparen stmt [tkn_else stmt]
   //      | tkn_while tkn_lparen expr tkn_rparen stmt
   //      | tkn_return [expr] tkn_semi
+  //      | tkn_read tkn_lparen tk_id tkn_rparen tkn_semi
+  //      | tkn_write tkn_lparen (tkn_str_lit | expr) tkn_rparen tkn_semi
   //      | assgn tk_semi
   //      | tkn_id tkn_lparen [expr {tkn_comma expr}] tkn_rparen tkn_semi
   //      | tkn_lbrace stmt tkn_rbrace
