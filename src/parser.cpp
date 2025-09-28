@@ -1,7 +1,8 @@
 #include <format>
 #include <iostream>
-#include "token.hpp"
+#include "emitter.hpp"
 #include "parser.hpp"
+#include "token.hpp"
 
 bool Parser::program() {
   while (!token(TOKEN_EOF)) {
@@ -434,8 +435,8 @@ void Parser::abort(std::string_view message) {
   std::exit(EXIT_FAILURE);
 }
 
-Parser::Parser(Lexer &lexer, bool print_debug)
-    : m_lexer{lexer}, m_tokens{}, m_cursor_pos{0}, m_print_debug{print_debug} {
+Parser::Parser(Lexer& lexer, Emitter& emitter, bool print_debug)
+    : m_lexer{lexer}, m_emitter{emitter}, m_tokens{}, m_cursor_pos{0}, m_print_debug{print_debug} {
   m_tokens.emplace_back(m_lexer.get_token());
 };
 

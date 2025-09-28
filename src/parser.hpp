@@ -1,13 +1,15 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "emitter.hpp"
 #include "lexer.hpp"
 #include "token.hpp"
 #include <vector>
 
 class Parser {
  private:
-  Lexer &m_lexer;               // Reference to the lexer
+  Lexer& m_lexer;               // Reference to the lexer
+  Emitter& m_emitter;           // Reference to the emitter
   std::vector<Token> m_tokens;  // Vector of tokens
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
@@ -110,8 +112,8 @@ class Parser {
   void abort(std::string_view);
 
  public:
-  // Constructor taking a reference to the lexer and bool for whether to print debug text
-  Parser(Lexer &lexer, bool print_debug);
+  // Constructor taking a reference to the lexer and emitter, and bool for whether to print debug text
+  Parser(Lexer& lexer, Emitter& emitter, bool print_debug);
   // Move the cursor forwards by one token
   void next_token();
   // Move cursor to the given index
