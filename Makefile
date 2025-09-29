@@ -15,4 +15,4 @@ $(EXE) : $(OBJECTS)
 	$(CXX) $(CPPFLAGS) $(EXTRAFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJECTS) $(EXE)
+	rm -f $(OBJECTS) $(EXE) *.out *.s *.asm

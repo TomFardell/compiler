@@ -1,3 +1,6 @@
-*.o
+*.asm
 *.c
+*.o
+*.out
+*.s
 compiler

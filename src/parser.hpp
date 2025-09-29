@@ -119,7 +119,7 @@ class Parser {
   // Move cursor to the given index
   void move_cursor_back_to(int idx);
 
-  // Parse all tokens. For now, just print whether the source code is a valid program
+  // Parse all tokens and write to file
   void parse();
 };
 

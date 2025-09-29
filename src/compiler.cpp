@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
   std::string source_string{read_file(in_file_name)};  // Should exist for the lifetime of the lexer and parser
 
   Lexer lexer{source_string};
-  Emitter emitter{"a.asm"};  // TODO: Add -o argument to change this
+  Emitter emitter{"a.s"};  // TODO: Add -o argument to change this
   Parser parser{lexer, emitter, true};
 
   parser.parse();

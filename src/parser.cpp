@@ -5,6 +5,14 @@
 #include "token.hpp"
 
 bool Parser::program() {
+  m_emitter.add_line_to_header(".section .rodata");
+  m_emitter.add_line_to_header(R"(.int_format: .string "%d\n")");
+  m_emitter.add_line_to_header(R"(.flt_format: .string "%f\n")");
+  m_emitter.add_line_to_header(R"(.str_format: .string "%s\n")");
+  m_emitter.add_line_to_code(".text");
+  m_emitter.add_line_to_code(".globl main");
+  m_emitter.add_line_to_code(".type main,@function");
+
   while (!token(TOKEN_EOF)) {
     if (function()) {
       continue;
@@ -459,5 +467,6 @@ void Parser::move_cursor_back_to(int idx) {
 
 void Parser::parse() {
   bool result = program();
+  if (result) m_emitter.write_file();
   std::cout << "Program is valid: " << result << "\n";
 }
