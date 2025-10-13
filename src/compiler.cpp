@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 #include "emitter.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -16,7 +17,7 @@ std::string read_file(const std::string file_path) {
   return source_buffer.str();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   if (argc != 2) {
     std::cout << "Run the program with a single argument: the file to be compiled, i.e. ./compiler test.c\n";
     std::exit(EXIT_FAILURE);

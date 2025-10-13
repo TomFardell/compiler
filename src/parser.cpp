@@ -1,7 +1,9 @@
+#include "parser.hpp"
+
 #include <format>
 #include <iostream>
+
 #include "emitter.hpp"
-#include "parser.hpp"
 #include "token.hpp"
 
 bool Parser::program() {
@@ -9,6 +11,7 @@ bool Parser::program() {
   m_emitter.add_line_to_header(R"(.int_format: .string "%d\n")");
   m_emitter.add_line_to_header(R"(.flt_format: .string "%f\n")");
   m_emitter.add_line_to_header(R"(.str_format: .string "%s\n")");
+
   m_emitter.add_line_to_code(".text");
   m_emitter.add_line_to_code(".globl main");
   m_emitter.add_line_to_code(".type main,@function");
@@ -443,7 +446,7 @@ void Parser::abort(std::string_view message) {
   std::exit(EXIT_FAILURE);
 }
 
-Parser::Parser(Lexer& lexer, Emitter& emitter, bool print_debug)
+Parser::Parser(Lexer &lexer, Emitter &emitter, bool print_debug)
     : m_lexer{lexer}, m_emitter{emitter}, m_tokens{}, m_cursor_pos{0}, m_print_debug{print_debug} {
   m_tokens.emplace_back(m_lexer.get_token());
 };

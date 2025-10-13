@@ -1,9 +1,11 @@
+#include "lexer.hpp"
+
 #include <cstdlib>
 #include <format>
 #include <iostream>
 #include <string>
 #include <string_view>
-#include "lexer.hpp"
+
 #include "token.hpp"
 
 void Lexer::abort(std::string_view message) {

@@ -1,15 +1,51 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "emitter.hpp"
 #include "lexer.hpp"
 #include "token.hpp"
-#include <vector>
+
+enum ASTNodeType {
+  AST_NODE_PROGRAM,
+
+  AST_NODE_VARIABLE_DECLARATION,
+  AST_NODE_ARRAY_DECLARATION,
+  AST_NODE_FUNCTION_DECLARATION,
+
+  AST_NODE_FUNCTION_DEFINITION,
+
+  AST_NODE_STATEMENT_IF,
+  AST_NODE_STATEMENT_WHILE,
+  AST_NODE_STATEMENT_RETURN,
+  AST_NODE_STATEMENT_READ,
+  AST_NODE_STATEMENT_WRITE,
+  AST_NODE_STATEMENT_FUNCTION_CALL,
+  AST_NODE_STATEMENT_ASSIGNMENT,
+
+  AST_NODE_EXPRESSION_UNARY_OPERATION,
+  AST_NODE_EXPRESSION_BINARY_OPERATION,
+  AST_NODE_EXPRESSION_VARIABLE,
+  AST_NODE_EXPRESSION_ARRAY_ELEMENT,
+  AST_NODE_EXPRESSION_FUNCTION_CALL,
+  AST_NODE_EXPRESSION_LITERAL,
+
+};
+
+struct ASTNode {
+  ASTNodeType type;                                   // Type of this abstract syntax tree node
+  std::unordered_map<std::string, std::string> data;  // Data associated with this node. Will vary with the type
+  std::vector<ASTNode> children;  // Children of this node. The expected number of children depends on the type
+};
 
 class Parser {
  private:
-  Lexer& m_lexer;               // Reference to the lexer
-  Emitter& m_emitter;           // Reference to the emitter
+  Lexer &m_lexer;      // Reference to the lexer
+  Emitter &m_emitter;  // Reference to the emitter
+
   std::vector<Token> m_tokens;  // Vector of tokens
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
@@ -113,7 +149,7 @@ class Parser {
 
  public:
   // Constructor taking a reference to the lexer and emitter, and bool for whether to print debug text
-  Parser(Lexer& lexer, Emitter& emitter, bool print_debug);
+  Parser(Lexer &lexer, Emitter &emitter, bool print_debug);
   // Move the cursor forwards by one token
   void next_token();
   // Move cursor to the given index

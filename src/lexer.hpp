@@ -2,6 +2,7 @@
 #define LEXER_H
 
 #include <string_view>
+
 #include "token.hpp"
 
 class Lexer {
