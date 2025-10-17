@@ -2,49 +2,12 @@
 #define PARSER_H
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "ast.hpp"
 #include "emitter.hpp"
 #include "lexer.hpp"
 #include "token.hpp"
-
-enum ASTNodeType {
-  AST_NODE_NULL,
-  AST_NODE_PROGRAM,
-
-  AST_NODE_VARIABLE_DECLARATION,
-  AST_NODE_FUNCTION_DECLARATION,
-
-  AST_NODE_FUNCTION_DEFINITION,
-
-  AST_NODE_PARAMETER,
-  AST_NODE_VOID_PARAMETERS,
-
-  AST_NODE_STATEMENT_IF,
-  AST_NODE_STATEMENT_WHILE,
-  AST_NODE_STATEMENT_RETURN,
-  AST_NODE_STATEMENT_READ,
-  AST_NODE_STATEMENT_WRITE,
-  AST_NODE_STATEMENT_FUNCTION_CALL,
-  AST_NODE_STATEMENT_ASSIGNMENT,
-  AST_NODE_STATEMENT_LIST,
-  AST_NODE_STATEMENT_EMPTY,
-
-  AST_NODE_EXPRESSION_UNARY_OPERATION,
-  AST_NODE_EXPRESSION_BINARY_OPERATION,
-  AST_NODE_EXPRESSION_VARIABLE,
-  AST_NODE_EXPRESSION_FUNCTION_CALL,
-  AST_NODE_EXPRESSION_LITERAL,
-
-  AST_NODE_STRING_LITERAL
-};
-
-struct ASTNode {
-  ASTNodeType type;                                   // Type of this abstract syntax tree node
-  std::unordered_map<std::string, std::string> data;  // Data associated with this node. Will vary with the type
-  std::vector<ASTNode> children;  // Children of this node. The expected number of children depends on the type
-};
 
 class Parser {
  private:
@@ -55,8 +18,7 @@ class Parser {
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
 
-  ASTNode m_ast_root;                // Root node of the generated AST
-  ASTNode &m_ast_current_leaf_node;  // Reference to the leaf node from which the AST is being extended
+  ASTNode m_ast_root;  // Root node of the generated AST
 
   /*---------*/
   /* Grammar */

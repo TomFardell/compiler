@@ -611,6 +611,9 @@ ASTNode Parser::expression() {
 }
 
 std::string Parser::binary_operator() {
+  /*-----------------*/
+  /* Binary operator */
+  /*-----------------*/
   if (token(TOKEN_PLUS) || token(TOKEN_MINUS) || token(TOKEN_MULTIPLY) || token(TOKEN_DIVIDE) || token(TOKEN_EQ) ||
       token(TOKEN_NEQ) || token(TOKEN_LT) || token(TOKEN_LE) || token(TOKEN_GT) || token(TOKEN_GE) ||
       token(TOKEN_AND) || token(TOKEN_OR)) {
@@ -622,6 +625,9 @@ std::string Parser::binary_operator() {
 }
 
 bool Parser::token(TokenType token_type) {
+  /*-------*/
+  /* Token */
+  /*-------*/
   if (m_tokens[m_cursor_pos].get_type() == token_type) {  // Token matches
     if (m_print_debug)
       std::cout << "token " << Token::type_names.at(token_type) << ": '" << m_tokens[m_cursor_pos].get_text()
@@ -645,8 +651,7 @@ Parser::Parser(Lexer &lexer, Emitter &emitter, bool print_debug)
       m_tokens{},
       m_cursor_pos{0},
       m_print_debug{print_debug},
-      m_ast_root{AST_NODE_NULL, {}, {}},
-      m_ast_current_leaf_node{m_ast_root} {
+      m_ast_root{AST_NODE_NULL, {}, {}} {
   m_tokens.push_back(m_lexer.get_token());
 };
 
@@ -672,5 +677,9 @@ void Parser::parse() {
 
   if (m_ast_root.type != AST_NODE_NULL) m_emitter.write_file();
 
-  std::cout << "Program is valid: " << (m_ast_root.type != AST_NODE_NULL) << "\n";
+  if (m_print_debug) {
+    std::cout << "\nProgram is valid: " << (m_ast_root.type != AST_NODE_NULL) << "\n";
+    std::cout << "\n";
+    m_ast_root.print_tree();
+  }
 }

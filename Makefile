@@ -4,7 +4,7 @@ LDFLAGS=
 
 FOLDER=src
 EXE=compiler
-OBJECTS=$(FOLDER)/lexer.o $(FOLDER)/parser.o $(FOLDER)/compiler.o
+OBJECTS=$(FOLDER)/lexer.o $(FOLDER)/parser.o $(FOLDER)/compiler.o $(FOLDER)/ast.o
 
 default: $(EXE)
 
