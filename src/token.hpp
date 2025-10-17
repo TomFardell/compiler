@@ -1,6 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -71,7 +72,7 @@ class Token {
       {"while", TOKEN_WHILE}, {"write", TOKEN_WRITE}};
 
   // Name lookup for the enum
-  inline static const std::unordered_map<TokenType, std::string_view> type_names{
+  inline static const std::unordered_map<TokenType, std::string> type_names{
       {TOKEN_NULL, "null"},
       {TOKEN_EOF, "eof"},
       {TOKEN_IDENTIFIER, "identifier"},

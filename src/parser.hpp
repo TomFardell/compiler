@@ -10,13 +10,16 @@
 #include "token.hpp"
 
 enum ASTNodeType {
+  AST_NODE_NULL,
   AST_NODE_PROGRAM,
 
   AST_NODE_VARIABLE_DECLARATION,
-  AST_NODE_ARRAY_DECLARATION,
   AST_NODE_FUNCTION_DECLARATION,
 
   AST_NODE_FUNCTION_DEFINITION,
+
+  AST_NODE_PARAMETER,
+  AST_NODE_VOID_PARAMETERS,
 
   AST_NODE_STATEMENT_IF,
   AST_NODE_STATEMENT_WHILE,
@@ -25,14 +28,16 @@ enum ASTNodeType {
   AST_NODE_STATEMENT_WRITE,
   AST_NODE_STATEMENT_FUNCTION_CALL,
   AST_NODE_STATEMENT_ASSIGNMENT,
+  AST_NODE_STATEMENT_LIST,
+  AST_NODE_STATEMENT_EMPTY,
 
   AST_NODE_EXPRESSION_UNARY_OPERATION,
   AST_NODE_EXPRESSION_BINARY_OPERATION,
   AST_NODE_EXPRESSION_VARIABLE,
-  AST_NODE_EXPRESSION_ARRAY_ELEMENT,
   AST_NODE_EXPRESSION_FUNCTION_CALL,
   AST_NODE_EXPRESSION_LITERAL,
 
+  AST_NODE_STRING_LITERAL
 };
 
 struct ASTNode {
@@ -50,16 +55,20 @@ class Parser {
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
 
+  ASTNode m_ast_root;                // Root node of the generated AST
+  ASTNode &m_ast_current_leaf_node;  // Reference to the leaf node from which the AST is being extended
+
   /*---------*/
   /* Grammar */
   /*-------------------------------------------------------------------------------------------------------------*/
 
   // Grammar functions work as follows:
-  // Each function tries to match one of its rules. It goes through each rule and returns 'true' if the rule
-  // matches, moving the cursor forwards through those tokens. If a rule does not match, it moves to the next rule.
-  // If no rule matches, that function returns 'false' and moves the cursor back to the position it was at on entry
-  // to the function. Some functions can abort the parser, but only if they find a sequence of tokens or
-  // consecutive rules that in no circumstances would match the grammar
+  // Each function tries to match one of its rules. It goes through each rule and returns the necessary information
+  // for building the AST if the rule matches, moving the cursor forwards through those tokens. If a rule does not
+  // match, it moves to the next rule. If no rule matches, that function returns a nulled object (this will depend
+  // on the return type) and moves the cursor back to the position it was at on entry to the function. Some
+  // functions can abort the parser, but only if they find a sequence of tokens or consecutive rules that in no
+  // circumstances would match the grammar
 
   // Grammar notation in below comments:
   // {}   matches 0 or more of its contents
@@ -70,30 +79,24 @@ class Parser {
   // ...  continues the statement of the previous line
 
   // prog: {(decl tkn_semi) | func}
-  bool program();
+  ASTNode program();
 
-  // decl: type var_decl {tkn_comma var_decl}
+  // decl: type tkn_id {tkn_comma tkn_id}
   //     | (type | tkn_void) tkn_id tkn_lparen param_types
   //       ... tkn_rparen {tkn_comma tkn_id tkn_lparen param_types tkn_rparen}
-  bool declaration();
+  std::vector<ASTNode> declaration();
 
   // param_types: tkn_void
-  //            | type tkn_id [arr_decl_suff] {tkn_comma type tkn_id [arr_decl_suff]}
-  bool parameter_types();
+  //            | type tkn_id {tkn_comma type tkn_id}
+  std::vector<ASTNode> parameter_types();
 
   // func: (type | tkn_void) tkn_id tkn_lparen param_types tkn_rparen
-  //       ... tkn_lbrace {type var_decl {tkn_comma var_decl} tkn_semi} {stmnt} tkn_rbrace
-  bool function();
-
-  // var_decl: tkn_id [arr_decl_suff]
-  bool variable_declaration();
-
-  // arr_decl_suff: tkn_lbracket tkn_int_lit tkn_rbracket
-  bool array_declaration_suffix();
+  //       ... tkn_lbrace {type tkn_id {tkn_comma tkn_id} tkn_semi} {stmnt} tkn_rbrace
+  ASTNode function();
 
   // type: tkn_flt
   //     | tkn_int
-  bool type();
+  std::string type();
 
   // stmnt: tkn_if tkn_lparen expr tkn_rparen stmt [tkn_else stmt]
   //      | tkn_while tkn_lparen expr tkn_rparen stmt
@@ -101,43 +104,26 @@ class Parser {
   //      | tkn_read tkn_lparen tk_id tkn_rparen tkn_semi
   //      | tkn_write tkn_lparen (tkn_str_lit | expr) tkn_rparen tkn_semi
   //      | tkn_id tkn_lparen [expr {tkn_comma expr}] tkn_rparen tkn_semi
-  //      | assgn tk_semi
-  //      | tkn_lbrace stmt tkn_rbrace
+  //      | tkn_id tkn_assgn expr tk_semi
+  //      | tkn_lbrace {stmt} tkn_rbrace
   //      | tkn_semi
-  bool statement();
-
-  // assgn: tkn_id [tkn_lbracket expr tkn_rbracket] tkn_assgn expr
-  bool assignment();
+  ASTNode statement();
 
   // expr: tkn_lparen expr tk_rparen
   //     | tkn_min expr
   //     | tkn_not expr
-  //     | tkn_id [(tkn_lparen [expr {tkn_comma expr}] tkn_rparen) | (tkn_lbracket expr tkn_rbracket)]
+  //     | tkn_id [tkn_lparen [expr {tkn_comma expr}] tkn_rparen]
   //     | expr bin_op expr
   //     | expr rel_op expr
   //     | expr log_op expr
   //     | tkn_float_lit
   //     | tkn_int_lit
   //     | tkn_str_lit
-  bool expression();
+  ASTNode expression();
 
-  // bin_op: tkn_plus
-  //       | tkn_min
-  //       | tkn_mul
-  //       | tkn_div
-  bool binary_operator();
-
-  // rel_op: tkn_eq
-  //       | tkn_neq
-  //       | tkn_lt
-  //       | tkn_le
-  //       | tkn_gt
-  //       | tkn_ge
-  bool relational_operator();
-
-  // log_op: tkn_and
-  //       | tkn_or
-  bool logical_operator();
+  // bin_op: tkn_plus | tkn_min | tkn_mul | tkn_div | tkn_eq | tkn_neq | tkn_lt | tkn_le | tkn_gt | tkn_ge
+  //         ... | tkn_and | tkn_or
+  std::string binary_operator();
 
   // Read one token of the given type
   bool token(TokenType token_type);
