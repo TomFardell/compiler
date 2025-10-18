@@ -641,17 +641,12 @@ bool Parser::token(TokenType token_type) {
 }
 
 void Parser::abort(std::string_view message) {
-  std::cout << "Compilation aborted: parser error\n-> " << message << "\n";
+  std::cerr << "Compilation aborted: parser error\n-> " << message << "\n";
   std::exit(EXIT_FAILURE);
 }
 
 Parser::Parser(Lexer &lexer, Emitter &emitter, bool print_debug)
-    : m_lexer{lexer},
-      m_emitter{emitter},
-      m_tokens{},
-      m_cursor_pos{0},
-      m_print_debug{print_debug},
-      m_ast_root{AST_NODE_NULL, {}, {}} {
+    : m_lexer{lexer}, m_emitter{emitter}, m_tokens{}, m_cursor_pos{0}, m_print_debug{print_debug} {
   m_tokens.push_back(m_lexer.get_token());
 };
 
@@ -673,13 +668,13 @@ void Parser::move_cursor_back_to(int idx) {
 }
 
 void Parser::parse() {
-  m_ast_root = program();
-
-  if (m_ast_root.type != AST_NODE_NULL) m_emitter.write_file();
+  ASTNode program_node{program()};
 
   if (m_print_debug) {
-    std::cout << "\nProgram is valid: " << (m_ast_root.type != AST_NODE_NULL) << "\n";
+    std::cout << "\nProgram is valid: " << (program_node.type != AST_NODE_NULL) << "\n";
     std::cout << "\n";
-    m_ast_root.print_tree();
+    program_node.print_tree();
   }
+
+  m_emitter.emit_program(program_node);
 }

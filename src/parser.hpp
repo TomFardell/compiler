@@ -18,8 +18,6 @@ class Parser {
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
 
-  ASTNode m_ast_root;  // Root node of the generated AST
-
   /*---------*/
   /* Grammar */
   /*-------------------------------------------------------------------------------------------------------------*/
