@@ -18,6 +18,8 @@ class Parser {
   int m_cursor_pos;             // Position of the cursor through the vector of tokens
   const bool m_print_debug;     // Whether to print debug messages during parsing
 
+  int m_string_literal_index;  // Index of the next string literal to be added
+
   /*---------*/
   /* Grammar */
   /*-------------------------------------------------------------------------------------------------------------*/
@@ -78,7 +80,6 @@ class Parser {
   //     | expr log_op expr
   //     | tkn_float_lit
   //     | tkn_int_lit
-  //     | tkn_str_lit
   ASTNode expression();
 
   // bin_op: tkn_plus | tkn_min | tkn_mul | tkn_div | tkn_eq | tkn_neq | tkn_lt | tkn_le | tkn_gt | tkn_ge

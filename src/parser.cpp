@@ -380,8 +380,17 @@ ASTNode Parser::statement() {
     if (expression_node.type != AST_NODE_NULL) {
       write_statement_node.children.push_back(expression_node);
     } else if (token(TOKEN_STRING_LITERAL)) {
+      std::string string_contents{std::string{m_tokens[m_cursor_pos - 1].get_text()}};
+
+      m_emitter.m_string_literals.push_back(string_contents);
       write_statement_node.children.emplace_back(
-          AST_NODE_STRING_LITERAL, std::unordered_map<std::string, std::string>{}, std::vector<ASTNode>{});
+          AST_NODE_STRING_LITERAL,
+          std::unordered_map<std::string, std::string>{
+              {"name", std::format("%s%d", m_emitter.m_string_literal_identifier, m_string_literal_index)},
+              {"contents", string_contents}},
+          std::vector<ASTNode>{});
+
+      ++m_string_literal_index;
     } else {
       abort("Expected string literal or expression after '(' in write statement");
     }
@@ -522,7 +531,7 @@ ASTNode Parser::expression() {
   /* Expression beginning with a literal */
   /*-------------------------------------*/
   move_cursor_back_to(entry_cursor_pos);
-  if (token(TOKEN_FLOAT_LITERAL) || token(TOKEN_INT_LITERAL) || token(TOKEN_STRING_LITERAL)) {
+  if (token(TOKEN_FLOAT_LITERAL) || token(TOKEN_INT_LITERAL)) {
     ASTNode literal_node{AST_NODE_EXPRESSION_LITERAL,
                          {{"type", Token::type_names.at(m_tokens[m_cursor_pos - 1].get_type())},
                           {"value", std::string{m_tokens[m_cursor_pos - 1].get_text()}}},
