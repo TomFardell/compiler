@@ -655,7 +655,12 @@ void Parser::abort(std::string_view message) {
 }
 
 Parser::Parser(Lexer &lexer, Emitter &emitter, bool print_debug)
-    : m_lexer{lexer}, m_emitter{emitter}, m_tokens{}, m_cursor_pos{0}, m_print_debug{print_debug} {
+    : m_lexer{lexer},
+      m_emitter{emitter},
+      m_tokens{},
+      m_cursor_pos{0},
+      m_print_debug{print_debug},
+      m_string_literal_index{0} {
   m_tokens.push_back(m_lexer.get_token());
 };
 
