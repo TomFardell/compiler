@@ -7,25 +7,26 @@
 
 #include "ast.hpp"
 
-struct Parameter {
-  std::string name;  // Name of the parameter
-  std::string type;  // Type of the parameter
-};
-
 struct LocalVariable {
   std::string type;  // Type of the local variable
   int offset;        // Offset of the local variable (from rbp)
 };
 
-struct FunctionInfo {
-  std::string return_type;            // Return type of the function
-  std::vector<Parameter> parameters;  // Names and types of parameters for the function
-  std::unordered_map<std::string, LocalVariable> local_variables;  // Types and offsets of local variables
+class FunctionInfo {
+ public:
+  std::string m_return_type;                                         // Return type of the function
+  std::vector<std::string> m_parameters;                             // Names of parameters in order
+  std::unordered_map<std::string, LocalVariable> m_local_variables;  // Types and offsets of local variables
 
-  int variable_current_offset;  // Offset of the next local variable to be added
-  bool defined;                 // Whether a definition of the function exists
+  int m_stack_offset;  // Offset of the next local variable to be added
+  bool m_is_defined;   // Whether a definition of the function exists
 
-  FunctionInfo() : return_type{}, parameters{}, local_variables{}, variable_current_offset{0}, defined{false} {};
+  FunctionInfo() : m_return_type{}, m_parameters{}, m_local_variables{}, m_stack_offset{0}, m_is_defined{false} {};
+
+  // Add a local variable to the store while incrementing the offset
+  void add_local_variable(std::string name, std::string type);
+  // Add a parameter to the store while incrementing the offset
+  void add_parameter(std::string name, std::string type);
 };
 
 class Emitter {

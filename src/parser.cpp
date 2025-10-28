@@ -240,12 +240,10 @@ ASTNode Parser::function() {
     function_node.children.insert(function_node.children.end(), variable_declaration_nodes.begin(),
                                   variable_declaration_nodes.end());
 
-    // Loop through statements
-    std::vector<ASTNode> statement_nodes{};
+    // Loop through statements and push while they aren't null
     for (ASTNode statement_node{statement()}; statement_node.type != AST_NODE_NULL; statement_node = statement()) {
-      statement_nodes.push_back(statement_node);
+      function_node.children.push_back(statement_node);
     }
-    function_node.children.insert(function_node.children.begin(), statement_nodes.begin(), statement_nodes.end());
 
     if (!token(TOKEN_RBRACE)) abort("Expected '}' at end of function declaration");
 
