@@ -159,9 +159,12 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       result.append(body);
 
       result.append("\n");
+      result.append("  mov rax, 0\n");                           // If the function exits naturally, return 0
+      result.append(std::format(".{}:\n", function_end_label));  // Return statements set rax and jump here
       result.append("  mov rsp, rbp\n");
       result.append("  pop rbp\n");
       result.append("  ret\n");
+      result.append("\n");
 
       return result;
     }
@@ -251,8 +254,22 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       result.append("\n");
       result.append(process_ast_node(statement_node, function_name));
       result.append(std::format("  jump .{}{}\n", while_label, while_number));
-      result.append("\n");
       result.append(std::format(".{}{}:\n", while_end_label, while_number));
+
+      return result;
+    }
+
+    /*------------------*/
+    /* Return statement */
+    /*------------------*/
+    case AST_NODE_STATEMENT_RETURN: {
+      std::string result{};
+
+      ASTNode &expression_node = node.children[0];
+
+      result.append(process_ast_node(expression_node, function_name));
+      result.append("  mov rax, r8\n");  // The expression result ends up in r8. Return register is rax
+      result.append(std::format("  jmp .{}\n", function_end_label));
 
       return result;
     }
