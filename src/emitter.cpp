@@ -44,8 +44,7 @@ std::string Emitter::process_ast_node(ASTNode &node) {
 
       // Formats to print literal strings using printf
       for (auto const &[i, string_literal] : std::views::enumerate(m_string_literals)) {
-        result.append(
-            std::format("  {}{}: db \"{}\", 0xA, 0x0\n", m_string_literal_identifier, i, string_literal));
+        result.append(std::format("  {}{}: db \"{}\", 0xA, 0x0\n", string_literal_id, i, string_literal));
       }
 
       std::string bss_section{};
@@ -154,7 +153,7 @@ std::string Emitter::process_ast_node(ASTNode &node) {
         body.append(process_ast_node(child_node, function_name));
       }
 
-      result.append(std::format("  sub rsp, {}", m_functions_info[function_name].m_stack_offset));
+      result.append(std::format("  sub rsp, {}\n", m_functions_info[function_name].m_stack_offset));
       result.append("\n");
 
       result.append(body);
@@ -190,6 +189,47 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
     case AST_NODE_VOID_PARAMETERS: {
       // Parameters are handled in the function definition/declaration so do nothing
       return "";
+    }
+
+    /*--------------*/
+    /* If statement */
+    /*--------------*/
+    case AST_NODE_STATEMENT_IF: {
+      std::string result{};
+
+      int if_number{m_functions_info[function_name].m_if_statement_count++};
+      bool else_is_present{node.children.size() == 3};
+      std::cout << node.children.size() << "\n";
+
+      ASTNode &expression_node = node.children[0];
+      ASTNode &true_statement_node = node.children[1];
+
+      result.append(process_ast_node(expression_node, function_name));
+
+      // Comparisons always evaluate to zero or one at the expression level, meaning any if statement is just a
+      // check that the result of the comparison isn't zero (so non-boolean values are treated as true if they are
+      // not zero)
+      result.append("  cmp r8, 0\n");  // Expression results go in r8
+      result.append(std::format("  jne r8, .{}{}\n", if_true_label, if_number));
+      if (else_is_present)
+        result.append(std::format("  jmp .{}{}\n", if_false_label, if_number));
+      else
+        result.append(std::format("  jmp .{}{}\n", if_end_label, if_number));
+
+      result.append(std::format(".{}{}:\n", if_true_label, if_number));
+      result.append(process_ast_node(true_statement_node, function_name));
+      if (else_is_present) result.append(std::format("  jmp .{}{}\n", if_end_label, if_number));  // Jump past else
+
+      if (else_is_present) {
+        ASTNode &false_statement_node = node.children[2];
+
+        result.append(std::format(".{}{}:\n", if_false_label, if_number));
+        result.append(process_ast_node(false_statement_node, function_name));
+      }
+
+      result.append(std::format(".{}{}:\n", if_end_label, if_number));
+
+      return result;
     }
 
     // TODO: Put an abort here once all cases filled out

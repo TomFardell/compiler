@@ -2,6 +2,7 @@
 #define EMITTER_H
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -18,10 +19,17 @@ class FunctionInfo {
   std::vector<std::string> m_parameters;                             // Names of parameters in order
   std::unordered_map<std::string, LocalVariable> m_local_variables;  // Types and offsets of local variables
 
-  int m_stack_offset;  // Offset of the next local variable to be added
-  bool m_is_defined;   // Whether a definition of the function exists
+  int m_stack_offset;        // Offset of the next local variable to be added
+  int m_if_statement_count;  // Running number of if statements in the function
+  bool m_is_defined;         // Whether a definition of the function exists
 
-  FunctionInfo() : m_return_type{}, m_parameters{}, m_local_variables{}, m_stack_offset{0}, m_is_defined{false} {};
+  FunctionInfo()
+      : m_return_type{},
+        m_parameters{},
+        m_local_variables{},
+        m_stack_offset{0},
+        m_if_statement_count{0},
+        m_is_defined{false} {};
 
   // Add a local variable to the store while incrementing the offset
   void add_local_variable(std::string name, std::string type);
@@ -50,7 +58,11 @@ class Emitter {
  public:
   std::vector<std::string> m_string_literals;  // Vector containing all string literals appearing in the program
 
-  const std::string m_string_literal_identifier{"str_lit"};  // Name of string literals in the assembly
+  // Names that appear in the assembly
+  static constexpr std::string_view string_literal_id{"str_lit"};  // String literal identifier
+  static constexpr std::string_view if_true_label{"if_true"};      // Label name for true jump in if statement
+  static constexpr std::string_view if_false_label{"if_false"};    // Label name for false jump in if statement
+  static constexpr std::string_view if_end_label{"if_end"};        // Label name for end jump in if statement
 
   // Constructor taking out file path
   Emitter(const std::string out_path) : m_out_path{out_path}, m_functions_info{}, m_global_variables{} {};

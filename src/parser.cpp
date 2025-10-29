@@ -384,7 +384,7 @@ ASTNode Parser::statement() {
       write_statement_node.children.emplace_back(
           AST_NODE_STRING_LITERAL,
           std::unordered_map<std::string, std::string>{
-              {"name", std::format("%s%d", m_emitter.m_string_literal_identifier, m_string_literal_index)},
+              {"name", std::format("%s%d", m_emitter.string_literal_id, m_string_literal_index)},
               {"contents", string_contents}},
           std::vector<ASTNode>{});
 
