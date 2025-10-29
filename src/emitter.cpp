@@ -199,7 +199,6 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
 
       int if_number{m_functions_info[function_name].m_if_statement_count++};
       bool else_is_present{node.children.size() == 3};
-      std::cout << node.children.size() << "\n";
 
       ASTNode &expression_node = node.children[0];
       ASTNode &true_statement_node = node.children[1];
@@ -216,6 +215,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       else
         result.append(std::format("  jmp .{}{}\n", if_end_label, if_number));
 
+      result.append("\n");
       result.append(std::format(".{}{}:\n", if_true_label, if_number));
       result.append(process_ast_node(true_statement_node, function_name));
       if (else_is_present) result.append(std::format("  jmp .{}{}\n", if_end_label, if_number));  // Jump past else
@@ -223,11 +223,36 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       if (else_is_present) {
         ASTNode &false_statement_node = node.children[2];
 
+        result.append("\n");
         result.append(std::format(".{}{}:\n", if_false_label, if_number));
         result.append(process_ast_node(false_statement_node, function_name));
       }
 
       result.append(std::format(".{}{}:\n", if_end_label, if_number));
+
+      return result;
+    }
+
+    /*-----------------*/
+    /* While statement */
+    /*-----------------*/
+    case AST_NODE_STATEMENT_WHILE: {
+      std::string result{};
+
+      int while_number{m_functions_info[function_name].m_while_statement_count++};
+
+      ASTNode &expression_node = node.children[0];
+      ASTNode &statement_node = node.children[1];
+
+      result.append(std::format(".{}{}:\n", while_label, while_number));
+      result.append(process_ast_node(expression_node, function_name));
+      result.append("  cmp r8, 0\n");  // Expression results go in r8
+      result.append(std::format("  je r8, .{}{}\n", while_end_label, while_number));
+      result.append("\n");
+      result.append(process_ast_node(statement_node, function_name));
+      result.append(std::format("  jump .{}{}\n", while_label, while_number));
+      result.append("\n");
+      result.append(std::format(".{}{}:\n", while_end_label, while_number));
 
       return result;
     }
