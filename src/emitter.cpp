@@ -151,7 +151,7 @@ std::string Emitter::process_ast_node(ASTNode &node) {
 
       for (ASTNode &child_node : node.children) {
         if (child_node.type == AST_NODE_VARIABLE_DECLARATION) child_node.data["scope"] = function_name;
-        body.append(process_ast_node(child_node));
+        body.append(process_ast_node(child_node, function_name));
       }
 
       result.append(std::format("  sub rsp, {}", m_functions_info[function_name].m_stack_offset));
@@ -167,7 +167,32 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       return result;
     }
 
-    // TODO: Remove once all cases filled out
+    default: {
+      abort("Node requires function name to process");
+      return "";  // Never called
+    }
+  }
+}
+
+std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) {
+  switch (node.type) {
+    /*-----------*/
+    /* Parameter */
+    /*-----------*/
+    case AST_NODE_PARAMETER: {
+      // Parameters are handled in the function definition/declaration so do nothing
+      return "";
+    }
+
+    /*-----------------*/
+    /* Void parameters */
+    /*-----------------*/
+    case AST_NODE_VOID_PARAMETERS: {
+      // Parameters are handled in the function definition/declaration so do nothing
+      return "";
+    }
+
+    // TODO: Put an abort here once all cases filled out
     default: {
       return "";
     }

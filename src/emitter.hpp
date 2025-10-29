@@ -37,8 +37,10 @@ class Emitter {
   std::unordered_map<std::string, std::string> m_global_variables;  // Lookup for types of global variables
 
   // Given an abstract syntax tree node, get the assembly code associated with that node. Calling this with a
-  // program node will return the entire program in assembly
+  // program node will return the entire program in assembly. Also fills out information related to the program
   std::string process_ast_node(ASTNode &node);
+  // Some node types require information of which function they appear in
+  std::string process_ast_node(ASTNode &node, std::string funcion_name);
   // Check whether a redeclaration of a given function matches the exisiting info, aborting if not
   void check_function_node_matches_info(ASTNode &function_node, FunctionInfo &function_info);
 
