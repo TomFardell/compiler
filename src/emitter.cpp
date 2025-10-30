@@ -6,6 +6,7 @@
 #include <iostream>
 #include <ranges>
 #include <string>
+#include <unordered_map>
 
 #include "ast.hpp"
 
@@ -71,26 +72,18 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       return result;
     }
 
-    /*----------------------*/
-    /* Variable declaration */
-    /*----------------------*/
+    /*-----------------------------*/
+    /* Global variable declaration */
+    /*-----------------------------*/
     case AST_NODE_VARIABLE_DECLARATION: {
       std::string result{};
       std::string variable_name{node.data.at("name")};
 
-      // Scope must be set by the parent node
-      if (node.data.contains("scope")) {  // Variables declared in functions will have this set
-        FunctionInfo &function_info = m_functions_info.at(node.data.at("scope"));
+      if (m_global_variables.contains(variable_name)) abort("Redeclaration of global variable");
 
-        if (function_info.m_local_variables.contains(variable_name)) abort("Redeclaration of local variable");
-
-        function_info.add_local_variable(variable_name, node.data.at("type"));
-      } else {  // Otherwise the declaration has global scope. Allocate globals in the .bss section
-        if (m_global_variables.contains(variable_name)) abort("Redeclaration of global variable");
-
-        result.append(std::format("  {}: resb 4\n", variable_name));
-        m_global_variables[variable_name] = node.data.at("type");
-      }
+      // The reason for prefixing global variables is to protect against variables with register names
+      result.append(std::format("  {}{}: resb 4\n", global_id_prefix, variable_name));
+      m_global_variables[variable_name] = node.data.at("type");
 
       return result;  // In the local variable case, nothing is added to the assembly
     }
@@ -149,7 +142,6 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       std::string body{};
 
       for (ASTNode &child_node : node.children) {
-        if (child_node.type == AST_NODE_VARIABLE_DECLARATION) child_node.data["scope"] = function_name;
         body.append(process_ast_node(child_node, function_name));
       }
 
@@ -178,6 +170,21 @@ std::string Emitter::process_ast_node(ASTNode &node) {
 
 std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) {
   switch (node.type) {
+    /*----------------------------*/
+    /* Local variable declaration */
+    /*----------------------------*/
+    case AST_NODE_VARIABLE_DECLARATION: {
+      std::string result{};
+      std::string variable_name{node.data.at("name")};
+
+      FunctionInfo &function_info = m_functions_info.at(function_name);
+
+      if (function_info.m_local_variables.contains(variable_name)) abort("Redeclaration of local variable");
+
+      function_info.add_local_variable(variable_name, node.data.at("type"));
+
+      return result;  // In the local variable case, nothing is added to the assembly
+    }
     /*-----------*/
     /* Parameter */
     /*-----------*/
@@ -212,7 +219,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       // check that the result of the comparison isn't zero (so non-boolean values are treated as true if they are
       // not zero)
       result.append("  cmp r8, 0\n");  // Expression results go in r8
-      result.append(std::format("  jne r8, .{}{}\n", if_true_label, if_number));
+      result.append(std::format("  jne .{}{}\n", if_true_label, if_number));
       if (else_is_present)
         result.append(std::format("  jmp .{}{}\n", if_false_label, if_number));
       else
@@ -250,10 +257,10 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       result.append(std::format(".{}{}:\n", while_label, while_number));
       result.append(process_ast_node(expression_node, function_name));
       result.append("  cmp r8, 0\n");  // Expression results go in r8
-      result.append(std::format("  je r8, .{}{}\n", while_end_label, while_number));
+      result.append(std::format("  je .{}{}\n", while_end_label, while_number));
       result.append("\n");
       result.append(process_ast_node(statement_node, function_name));
-      result.append(std::format("  jump .{}{}\n", while_label, while_number));
+      result.append(std::format("  jmp .{}{}\n", while_label, while_number));
       result.append(std::format(".{}{}:\n", while_end_label, while_number));
 
       return result;
@@ -270,6 +277,37 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       result.append(process_ast_node(expression_node, function_name));
       result.append("  mov rax, r8\n");  // The expression result ends up in r8. Return register is rax
       result.append(std::format("  jmp .{}\n", function_end_label));
+
+      return result;
+    }
+
+    case AST_NODE_STATEMENT_ASSIGNMENT: {
+      std::string result{};
+      std::string variable_name{node.data.at("name")};
+
+      ASTNode &expression_node = node.children[0];
+      result.append(process_ast_node(expression_node, function_name));  // Expression result will be in r8
+
+      std::unordered_map<std::string, LocalVariable> &local_variables =
+          m_functions_info.at(function_name).m_local_variables;
+
+      if (local_variables.contains(variable_name)) {
+        LocalVariable &variable_info = local_variables.at(variable_name);
+
+        // TODO: Support floats
+        if (variable_info.type == "float") abort("Floats not supported yet");
+
+        result.append(std::format("  mov qword [rbp + {}], rbp\n", variable_info.offset));
+      } else {  // Otherwise the variable has global scope (or is undeclared)
+        if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment");
+
+        std::string variable_type{m_global_variables.at(variable_name)};
+
+        // TODO: Support floats
+        if (variable_type == "float") abort("Floats not supported yet");
+
+        result.append(std::format("  mov qword [{}{}], rbp\n", global_id_prefix, variable_name));
+      }
 
       return result;
     }

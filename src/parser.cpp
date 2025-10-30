@@ -433,6 +433,7 @@ ASTNode Parser::statement() {
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_IDENTIFIER) && token(TOKEN_ASSIGN)) {
     ASTNode assignment_node{AST_NODE_STATEMENT_ASSIGNMENT, {}, {}};
+    assignment_node.data["name"] = m_tokens[m_cursor_pos - 2].get_text();
 
     assignment_node.children.push_back(expression());
     if (assignment_node.children.back().type == AST_NODE_NULL)

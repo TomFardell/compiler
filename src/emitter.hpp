@@ -68,6 +68,7 @@ class Emitter {
   static constexpr std::string_view while_label{"while_start"};      // Label at the top of while loop
   static constexpr std::string_view while_end_label{"while_end"};    // Label at the end of while loop
   static constexpr std::string_view function_end_label{"func_end"};  // Label at the end of a function
+  static constexpr std::string_view global_id_prefix{"glob_"};       // Prefix for global variables
 
   // Constructor taking out file path
   Emitter(const std::string out_path) : m_out_path{out_path}, m_functions_info{}, m_global_variables{} {};
