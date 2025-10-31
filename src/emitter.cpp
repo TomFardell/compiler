@@ -38,10 +38,13 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       result.append("global main\n");
       result.append("\n");
       result.append("extern printf\n");
+      result.append("extern scanf\n");
       result.append("\n");
       result.append("section .data\n");
-      result.append("  int_fmt: db \"%d\", 0xA, 0x0\n");  // Format to print integers using printf
-      result.append("  flt_fmt: db \"%f\", 0xA, 0x0\n");  // Format to print floats using printf
+      result.append("  read_int_fmt: db \"%d\", 0x0\n");        // Format for scanf to read in an integer
+      result.append("  read_float_fmt: db \"%d\", 0x0\n");      // Format for scanf to read in a float
+      result.append("  write_int_fmt: db \"%d\", 0xA, 0x0\n");  // Format to print integers using printf
+      result.append("  write_flt_fmt: db \"%f\", 0xA, 0x0\n");  // Format to print floats using printf
 
       // Formats to print literal strings using printf
       for (auto const &[i, string_literal] : std::views::enumerate(m_string_literals)) {
@@ -281,6 +284,53 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       return result;
     }
 
+    /*----------------*/
+    /* Read statement */
+    /*----------------*/
+    case AST_NODE_STATEMENT_READ: {
+      std::string result{};
+      std::string variable_name{node.data.at("name")};
+
+      std::unordered_map<std::string, LocalVariable> &local_variables =
+          m_functions_info.at(function_name).m_local_variables;
+
+      if (local_variables.contains(variable_name)) {
+        LocalVariable &variable_info = local_variables.at(variable_name);
+
+        // TODO: Support floats
+        if (variable_info.type == "float") abort("Floats not supported yet");
+
+        result.append("  mov rdi, read_int_fmt\n");
+        result.append(std::format("  mov rsi, [rbp + {}]\n", variable_info.offset));
+      } else {  // Variable has global scope (or is undefined)
+        if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in write statement");
+
+        std::string variable_type{m_global_variables.at(variable_name)};
+
+        // TODO: Support floats
+        if (variable_type == "float") abort("Floats not supported yet");
+
+        result.append("  mov rdi, read_int_fmt\n");
+        result.append(std::format("  mov rsi, {}{}\n", global_id_prefix, variable_name));
+      }
+
+      result.append("  call scanf\n");
+      result.append("\n");
+
+      return result;
+    }
+
+    /*-----------------*/
+    /* Write statement */
+    /*-----------------*/
+
+    /*-------------------------*/
+    /* Function call statement */
+    /*-------------------------*/
+
+    /*----------------------*/
+    /* Assignment Statement */
+    /*----------------------*/
     case AST_NODE_STATEMENT_ASSIGNMENT: {
       std::string result{};
       std::string variable_name{node.data.at("name")};
@@ -299,7 +349,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
 
         result.append(std::format("  mov qword [rbp + {}], rbp\n", variable_info.offset));
       } else {  // Otherwise the variable has global scope (or is undeclared)
-        if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment");
+        if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment statement");
 
         std::string variable_type{m_global_variables.at(variable_name)};
 
