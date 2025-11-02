@@ -12,7 +12,7 @@
 
 void FunctionInfo::add_local_variable(std::string name, std::string type) {
   m_local_variables[name] = {type, m_stack_offset};
-  m_stack_offset += 4;  // Both int and float are of size 4
+  m_stack_offset += 8;  // Both int and float are 8 bytes in this language
 }
 
 void FunctionInfo::add_parameter(std::string name, std::string type) {
@@ -41,10 +41,10 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       result.append("extern scanf\n");
       result.append("\n");
       result.append("section .data\n");
-      result.append("  read_int_fmt: db \"%d\", 0x0\n");        // Format for scanf to read in an integer
-      result.append("  read_float_fmt: db \"%d\", 0x0\n");      // Format for scanf to read in a float
-      result.append("  write_int_fmt: db \"%d\", 0xA, 0x0\n");  // Format to print integers using printf
-      result.append("  write_flt_fmt: db \"%f\", 0xA, 0x0\n");  // Format to print floats using printf
+      result.append("  read_int_fmt: db \"%lld\", 0x0\n");        // Format for scanf to read in an integer
+      result.append("  read_float_fmt: db \"%lf\", 0x0\n");       // Format for scanf to read in a float
+      result.append("  write_int_fmt: db \"%lld\", 0xA, 0x0\n");  // Format to print integers using printf
+      result.append("  write_flt_fmt: db \"%lf\", 0xA, 0x0\n");   // Format to print floats using printf
 
       // Formats to print literal strings using printf
       for (auto const &[i, string_literal] : std::views::enumerate(m_string_literals)) {
@@ -85,7 +85,7 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       if (m_global_variables.contains(variable_name)) abort("Redeclaration of global variable");
 
       // The reason for prefixing global variables is to protect against variables with register names
-      result.append(std::format("  {}{}: resb 4\n", global_id_prefix, variable_name));
+      result.append(std::format("  {}{}: resb 8\n", global_id_prefix, variable_name));
       m_global_variables[variable_name] = node.data.at("type");
 
       return result;  // In the local variable case, nothing is added to the assembly
@@ -323,6 +323,25 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
     /*-----------------*/
     /* Write statement */
     /*-----------------*/
+    case AST_NODE_STATEMENT_WRITE: {
+      std::string result{};
+      ASTNode &write_node = node.children[0];
+
+      if (write_node.type == AST_NODE_STRING_LITERAL) {
+        result.append(std::format("  mov rdi, {}\n", write_node.data.at("name")));
+      } else {  // Otherwise is an expression
+        result.append(process_ast_node(write_node, function_name));
+
+        // TODO: Handle float case here
+        result.append("  mov rdi, write_int_fmt\n");
+        result.append("  mov rsi, r8\n");
+      }
+
+      result.append("  call printf\n");
+      result.append("\n");
+
+      return result;
+    }
 
     /*-------------------------*/
     /* Function call statement */
