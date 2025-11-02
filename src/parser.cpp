@@ -681,11 +681,11 @@ void Parser::move_cursor_back_to(int idx) {
 
 void Parser::parse() {
   ASTNode program_node{program()};
+  if (program_node.type == AST_NODE_NULL) abort("Input is not a valid program");
 
   if (m_print_debug) {
-    std::cout << "\nProgram is valid: " << (program_node.type != AST_NODE_NULL) << "\n";
-    std::cout << "\n";
     program_node.print_tree();
+    std::cout << "Compilation successful\n";
   }
 
   m_emitter.emit_program(program_node);

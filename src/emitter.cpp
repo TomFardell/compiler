@@ -136,9 +136,27 @@ std::string Emitter::process_ast_node(ASTNode &node) {
         function_info.m_is_defined = true;
       }
 
+      FunctionInfo &function_info = m_functions_info.at(function_name);
+
       result.append(std::format("{}:\n", function_name));
       result.append("  push rbp\n");
       result.append("  mov rbp, rsp\n");
+
+      size_t num_parameters{function_info.m_parameters.size()};
+      size_t num_stack_parameters{
+          num_parameters > parameter_registers.size() ? num_parameters - parameter_registers.size() : 0};
+
+      // The first parameters will be passed in registers
+      for (size_t i = 0; i < std::min(num_parameters, parameter_registers.size()); ++i) {
+        result.append(std::format("  push {}\n", parameter_registers[i]));
+      }
+
+      // Any remaining parameters were passed on the stack
+      for (size_t i = 0; i < num_stack_parameters; ++i) {
+        result.append(process_ast_node(node.children[i], function_name));
+        // The "+ 1" is because the return address is pushed to the stack when the function is called
+        result.append(std::format("  push qword [rbp + {}]\n", 8 * (num_stack_parameters + 1 - i)));
+      }
 
       std::string body{};
 
@@ -146,7 +164,11 @@ std::string Emitter::process_ast_node(ASTNode &node) {
         body.append(process_ast_node(child_node, function_name));
       }
 
-      result.append(std::format("  sub rsp, {}\n", m_functions_info[function_name].m_stack_offset));
+      // Increment the stack pointer through any variables declared in the loop above
+      if (function_info.m_local_variables.size() > num_parameters) {
+        result.append(
+            std::format("  sub rsp, {}\n", 8 * (function_info.m_local_variables.size() - num_parameters)));
+      }
       result.append("\n");
 
       result.append(body);
@@ -345,16 +367,51 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
     /*-------------------------*/
     /* Function call statement */
     /*-------------------------*/
+    case AST_NODE_STATEMENT_FUNCTION_CALL: {
+      std::string result{};
+
+      std::string called_function_name{node.data.at("name")};
+      if (!m_functions_info.contains(called_function_name)) abort("Call to undeclared function in statement");
+
+      size_t num_arguments_given{node.children.size()};
+      size_t num_arguments_expected{m_functions_info.at(called_function_name).m_parameters.size()};
+
+      if (num_arguments_given != num_arguments_expected)
+        abort("Incorrect number of arguments given to function call in statement");
+
+      // The first arguments go in registers
+      for (size_t i = 0; i < std::min(num_arguments_given, parameter_registers.size()); ++i) {
+        result.append(process_ast_node(node.children[i], function_name));
+        result.append(std::format("  mov {}, {}\n", parameter_registers[i], expression_register));
+      }
+
+      // Any remaining arguments go on the stack
+      for (size_t i = parameter_registers.size(); i < num_arguments_given; ++i) {
+        result.append(process_ast_node(node.children[i], function_name));
+        result.append(std::format("  push {}\n", expression_register));
+      }
+
+      result.append(std::format("  call {}\n", called_function_name));
+
+      // If arguments were pushed to the stack, move the stack pointer back over the arguments
+      if (parameter_registers.size() < num_arguments_given) {
+        size_t stack_increment{8 * (num_arguments_given - parameter_registers.size())};
+        result.append(std::format("  add rbp, {}\n", stack_increment));
+        result.append("\n");
+      }
+
+      return result;
+    }
 
     /*----------------------*/
-    /* Assignment Statement */
+    /* Assignment statement */
     /*----------------------*/
     case AST_NODE_STATEMENT_ASSIGNMENT: {
       std::string result{};
       std::string variable_name{node.data.at("name")};
 
       ASTNode &expression_node = node.children[0];
-      result.append(process_ast_node(expression_node, function_name));  // Expression result will be in r8
+      result.append(process_ast_node(expression_node, function_name));
 
       std::unordered_map<std::string, LocalVariable> &local_variables =
           m_functions_info.at(function_name).m_local_variables;
@@ -365,7 +422,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_info.type == "float") abort("Floats not supported yet");
 
-        result.append(std::format("  mov qword [rbp + {}], rbp\n", variable_info.offset));
+        result.append(std::format("  mov qword [rbp + {}], {}\n", variable_info.offset, expression_register));
       } else {  // Otherwise the variable has global scope (or is undeclared)
         if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment statement");
 
@@ -374,7 +431,8 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_type == "float") abort("Floats not supported yet");
 
-        result.append(std::format("  mov qword [{}{}], rbp\n", global_id_prefix, variable_name));
+        result.append(
+            std::format("  mov qword [{}{}], {}\n", global_id_prefix, variable_name, expression_register));
       }
 
       return result;
