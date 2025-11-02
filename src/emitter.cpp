@@ -140,8 +140,6 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       result.append("  push rbp\n");
       result.append("  mov rbp, rsp\n");
 
-      // TODO: Push any callee-saved registers that end up being used
-
       std::string body{};
 
       for (ASTNode &child_node : node.children) {
@@ -221,7 +219,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       // Comparisons always evaluate to zero or one at the expression level, meaning any if statement is just a
       // check that the result of the comparison isn't zero (so non-boolean values are treated as true if they are
       // not zero)
-      result.append("  cmp r8, 0\n");  // Expression results go in r8
+      result.append(std::format("  cmp {}, 0\n", expression_register));
       result.append(std::format("  jne .{}{}\n", if_true_label, if_number));
       if (else_is_present)
         result.append(std::format("  jmp .{}{}\n", if_false_label, if_number));
@@ -259,7 +257,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
 
       result.append(std::format(".{}{}:\n", while_label, while_number));
       result.append(process_ast_node(expression_node, function_name));
-      result.append("  cmp r8, 0\n");  // Expression results go in r8
+      result.append(std::format("  cmp {}, 0\n", expression_register));
       result.append(std::format("  je .{}{}\n", while_end_label, while_number));
       result.append("\n");
       result.append(process_ast_node(statement_node, function_name));
@@ -278,7 +276,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       ASTNode &expression_node = node.children[0];
 
       result.append(process_ast_node(expression_node, function_name));
-      result.append("  mov rax, r8\n");  // The expression result ends up in r8. Return register is rax
+      result.append(std::format("  mov rax, {}\n", expression_register));  // Return register is rax
       result.append(std::format("  jmp .{}\n", function_end_label));
 
       return result;
@@ -300,8 +298,8 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_info.type == "float") abort("Floats not supported yet");
 
-        result.append("  mov rdi, read_int_fmt\n");
-        result.append(std::format("  mov rsi, [rbp + {}]\n", variable_info.offset));
+        result.append(std::format("  mov {}, read_int_fmt\n", parameter_registers[0]));
+        result.append(std::format("  mov {}, [rbp + {}]\n", parameter_registers[1], variable_info.offset));
       } else {  // Variable has global scope (or is undefined)
         if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in write statement");
 
@@ -310,8 +308,8 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_type == "float") abort("Floats not supported yet");
 
-        result.append("  mov rdi, read_int_fmt\n");
-        result.append(std::format("  mov rsi, {}{}\n", global_id_prefix, variable_name));
+        result.append(std::format("  mov {}, read_int_fmt\n", parameter_registers[0]));
+        result.append(std::format("  mov {}, {}{}\n", parameter_registers[0], global_id_prefix, variable_name));
       }
 
       result.append("  call scanf\n");
@@ -328,13 +326,14 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       ASTNode &write_node = node.children[0];
 
       if (write_node.type == AST_NODE_STRING_LITERAL) {
-        result.append(std::format("  mov rdi, {}\n", write_node.data.at("name")));
+        result.append(std::format("  mov {}, {}{}\n", parameter_registers[0], string_literal_id,
+                                  write_node.data.at("number")));
       } else {  // Otherwise is an expression
         result.append(process_ast_node(write_node, function_name));
 
         // TODO: Handle float case here
-        result.append("  mov rdi, write_int_fmt\n");
-        result.append("  mov rsi, r8\n");
+        result.append(std::format("  mov {}, write_int_fmt\n", parameter_registers[0]));
+        result.append(std::format("  mov {}, r8\n", parameter_registers[1]));
       }
 
       result.append("  call printf\n");

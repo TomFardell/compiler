@@ -1,6 +1,7 @@
 #ifndef EMITTER_H
 #define EMITTER_H
 
+#include <array>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -57,18 +58,23 @@ class Emitter {
   // Stop the compilation due to an emission error
   void abort(std::string_view);
 
- public:
-  std::vector<std::string> m_string_literals;  // Vector containing all string literals appearing in the program
-
-  // Names that appear in the assembly
+  // -- Names that appear in the assembly --
   static constexpr std::string_view string_literal_id{"str_lit"};    // String literal identifier
+  static constexpr std::string_view global_id_prefix{"glob_"};       // Prefix for global variables
   static constexpr std::string_view if_true_label{"if_true"};        // Label name for true jump in if statement
   static constexpr std::string_view if_false_label{"if_false"};      // Label name for false jump in if statement
   static constexpr std::string_view if_end_label{"if_end"};          // Label name for end jump in if statement
   static constexpr std::string_view while_label{"while_start"};      // Label at the top of while loop
   static constexpr std::string_view while_end_label{"while_end"};    // Label at the end of while loop
   static constexpr std::string_view function_end_label{"func_end"};  // Label at the end of a function
-  static constexpr std::string_view global_id_prefix{"glob_"};       // Prefix for global variables
+
+  // -- Information of registers used in the assembly --
+  static constexpr std::string_view expression_register{"r10"};  // Register expression results are put in
+  // Registers used to pass arguments to functions (in order)
+  static constexpr std::array<std::string_view, 6> parameter_registers{"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+ public:
+  std::vector<std::string> m_string_literals;  // Vector containing all string literals appearing in the program
 
   // Constructor taking out file path
   Emitter(const std::string out_path) : m_out_path{out_path}, m_functions_info{}, m_global_variables{} {};
