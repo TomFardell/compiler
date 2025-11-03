@@ -65,6 +65,12 @@ std::string Emitter::process_ast_node(ASTNode &node) {
           abort("Unexpected type of child node of program node");
       }
 
+      for (const auto &[function_name, function_info] : m_functions_info) {
+        if (function_info.m_is_called && !function_info.m_is_defined) {
+          abort(std::format("Call to function '{}' with no existing definition", function_name));
+        }
+      }
+
       result.append("\n");
       result.append("section .bss\n");
       result.append(bss_section);
@@ -123,7 +129,9 @@ std::string Emitter::process_ast_node(ASTNode &node) {
       if (m_functions_info.contains(function_name)) {
         FunctionInfo &function_info = m_functions_info.at(function_name);
         if (function_info.m_is_defined) abort("Redefinition of function");
+
         check_function_node_matches_info(node, function_info);
+        function_info.m_is_defined = true;
       } else {
         FunctionInfo &function_info = m_functions_info[function_name];  // Zero initialise function info
 
@@ -364,17 +372,21 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       return result;
     }
 
-    /*-------------------------*/
-    /* Function call statement */
-    /*-------------------------*/
-    case AST_NODE_STATEMENT_FUNCTION_CALL: {
+    /*---------------------------------------*/
+    /* Function call statement or expression */
+    /*---------------------------------------*/
+    case AST_NODE_STATEMENT_FUNCTION_CALL:
+    case AST_NODE_EXPRESSION_FUNCTION_CALL: {
       std::string result{};
 
       std::string called_function_name{node.data.at("name")};
       if (!m_functions_info.contains(called_function_name)) abort("Call to undeclared function in statement");
 
+      FunctionInfo &function_info = m_functions_info.at(called_function_name);
+      function_info.m_is_called = true;
+
       size_t num_arguments_given{node.children.size()};
-      size_t num_arguments_expected{m_functions_info.at(called_function_name).m_parameters.size()};
+      size_t num_arguments_expected{function_info.m_parameters.size()};
 
       if (num_arguments_given != num_arguments_expected)
         abort("Incorrect number of arguments given to function call in statement");
@@ -399,6 +411,13 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         result.append(std::format("  add rbp, {}\n", stack_increment));
         result.append("\n");
       }
+
+      // If the function call is an expression, put the returned value in the expression register
+      if (node.type == AST_NODE_EXPRESSION_FUNCTION_CALL) {
+        result.append(std::format("  mov {}, rax\n", expression_register));
+      }
+
+      result.append("\n");
 
       return result;
     }

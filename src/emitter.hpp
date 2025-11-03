@@ -24,6 +24,7 @@ class FunctionInfo {
   int m_if_statement_count;     // Running number of if statements in the function
   int m_while_statement_count;  // Running number of while statements in the function
   bool m_is_defined;            // Whether a definition of the function exists
+  bool m_is_called;             // Whether the function is called at some point during the program
 
   FunctionInfo()
       : m_return_type{},
@@ -32,7 +33,8 @@ class FunctionInfo {
         m_stack_offset{0},
         m_if_statement_count{0},
         m_while_statement_count{0},
-        m_is_defined{false} {};
+        m_is_defined{false},
+        m_is_called{false} {};
 
   // Add a local variable to the store while incrementing the offset
   void add_local_variable(std::string name, std::string type);
