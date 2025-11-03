@@ -415,9 +415,9 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       // If the function call is an expression, put the returned value in the expression register
       if (node.type == AST_NODE_EXPRESSION_FUNCTION_CALL) {
         result.append(std::format("  mov {}, rax\n", expression_register));
+      } else {
+        result.append("\n");
       }
-
-      result.append("\n");
 
       return result;
     }
@@ -454,7 +454,29 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
             std::format("  mov qword [{}{}], {}\n", global_id_prefix, variable_name, expression_register));
       }
 
+      result.append("\n");
+
       return result;
+    }
+
+    /*-----------------------*/
+    /* Braced statement list */
+    /*-----------------------*/
+    case AST_NODE_STATEMENT_LIST: {
+      std::string result{};
+
+      for (ASTNode &child_node : node.children) {
+        result.append(process_ast_node(child_node, function_name));
+      }
+
+      return result;
+    }
+
+    /*-----------------*/
+    /* Empty statement */
+    /*-----------------*/
+    case AST_NODE_STATEMENT_EMPTY: {
+      return "";
     }
 
     // TODO: Put an abort here once all cases filled out
