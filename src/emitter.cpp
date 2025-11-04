@@ -479,9 +479,55 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       return "";
     }
 
+    case AST_NODE_EXPRESSION_UNARY_OPERATION: {
+      return "";  // TODO: Fill out
+    }
+    case AST_NODE_EXPRESSION_BINARY_OPERATION: {
+      return "";  // TODO: Fill out
+    }
+
+    /*---------------------*/
+    /* Variable expression */
+    /*---------------------*/
+    case AST_NODE_EXPRESSION_VARIABLE: {
+      std::string result{};
+      std::string variable_name{node.data.at("name")};
+
+      std::unordered_map<std::string, LocalVariable> &local_variables =
+          m_functions_info.at(function_name).m_local_variables;
+
+      if (local_variables.contains(variable_name)) {
+        LocalVariable &variable_info = local_variables.at(variable_name);
+
+        // TODO: Support floats
+        if (variable_info.type == "float") abort("Floats not supported yet");
+
+        result.append(std::format("  mov {}, [rbp + {}]\n", expression_register, variable_info.offset));
+      } else {  // Otherwise the variable has global scope (or is undeclared)
+        if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment statement");
+
+        std::string variable_type{m_global_variables.at(variable_name)};
+
+        // TODO: Support floats
+        if (variable_type == "float") abort("Floats not supported yet");
+
+        result.append(std::format("  mov {}, [{}{}]\n", expression_register, global_id_prefix, variable_name));
+      }
+
+      return result;
+    }
+
+    /*--------------------*/
+    /* Literal expression */
+    /*--------------------*/
+    case AST_NODE_EXPRESSION_LITERAL: {
+      return "";  // TODO: Fill out
+    }
+
     // TODO: Put an abort here once all cases filled out
     default: {
-      return "";
+      abort("Unexpected node type");
+      return "";  // Never runs
     }
   }
 }
