@@ -521,7 +521,14 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
     /* Literal expression */
     /*--------------------*/
     case AST_NODE_EXPRESSION_LITERAL: {
-      return "";  // TODO: Fill out
+      std::string result{};
+
+      // TODO: Support floats
+      if (node.data.at("type") == "float") abort("Floats not supported yet");
+
+      result.append(std::format("  mov {}, {}\n", expression_register, node.data.at("value")));
+
+      return result;
     }
 
     // TODO: Put an abort here once all cases filled out
