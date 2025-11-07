@@ -11,8 +11,8 @@
 #include "ast.hpp"
 
 void FunctionInfo::add_local_variable(std::string name, std::string type) {
-  m_local_variables[name] = {type, m_stack_offset};
   m_stack_offset += 8;  // Both int and float are 8 bytes in this language
+  m_local_variables[name] = {type, m_stack_offset};
 }
 
 void FunctionInfo::add_parameter(std::string name, std::string type) {
@@ -329,7 +329,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         if (variable_info.type == "float") abort("Floats not supported yet");
 
         result.append(std::format("  mov {}, read_int_fmt\n", parameter_registers[0]));
-        result.append(std::format("  mov {}, [rbp + {}]\n", parameter_registers[1], variable_info.offset));
+        result.append(std::format("  mov {}, [rbp - {}]\n", parameter_registers[1], variable_info.offset));
       } else {  // Variable has global scope (or is undefined)
         if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in write statement");
 
@@ -363,7 +363,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
 
         // TODO: Handle float case here
         result.append(std::format("  mov {}, write_int_fmt\n", parameter_registers[0]));
-        result.append(std::format("  mov {}, r8\n", parameter_registers[1]));
+        result.append(std::format("  mov {}, {}\n", parameter_registers[1], expression_register));
       }
 
       result.append("  call printf\n");
@@ -408,7 +408,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       // If arguments were pushed to the stack, move the stack pointer back over the arguments
       if (parameter_registers.size() < num_arguments_given) {
         size_t stack_increment{8 * (num_arguments_given - parameter_registers.size())};
-        result.append(std::format("  add rbp, {}\n", stack_increment));
+        result.append(std::format("  add rsp, {}\n", stack_increment));
         result.append("\n");
       }
 
@@ -441,7 +441,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_info.type == "float") abort("Floats not supported yet");
 
-        result.append(std::format("  mov qword [rbp + {}], {}\n", variable_info.offset, expression_register));
+        result.append(std::format("  mov qword [rbp - {}], {}\n", variable_info.offset, expression_register));
       } else {  // Otherwise the variable has global scope (or is undeclared)
         if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment statement");
 
@@ -502,7 +502,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Support floats
         if (variable_info.type == "float") abort("Floats not supported yet");
 
-        result.append(std::format("  mov {}, [rbp + {}]\n", expression_register, variable_info.offset));
+        result.append(std::format("  mov {}, [rbp - {}]\n", expression_register, variable_info.offset));
       } else {  // Otherwise the variable has global scope (or is undeclared)
         if (!m_global_variables.contains(variable_name)) abort("Unrecognised identifier in assignment statement");
 

@@ -71,7 +71,8 @@ class Emitter {
   static constexpr std::string_view function_end_label{"func_end"};  // Label at the end of a function
 
   // -- Information of registers used in the assembly --
-  static constexpr std::string_view expression_register{"r10"};  // Register expression results are put in
+  static constexpr std::string_view expression_register{"r10"};  // Register in which expression results are placed
+  static constexpr std::string_view operation_register{"r11"};   // Register used to hold right operands
   // Registers used to pass arguments to functions (in order)
   static constexpr std::array<std::string_view, 6> parameter_registers{"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
