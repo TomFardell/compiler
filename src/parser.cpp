@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ast.hpp"
 #include "emitter.hpp"
 #include "token.hpp"
 
@@ -472,30 +473,46 @@ ASTNode Parser::statement() {
   return {AST_NODE_NULL, {}, {}};
 }
 
-ASTNode Parser::expression() {
+ASTNode Parser::expression(int max_operator_precedence) {
   int entry_cursor_pos{m_cursor_pos};
+
+  /*-----------------------------------------------*/
+  /* Recursive call to lower precedence expression */
+  /*-----------------------------------------------*/
+  if (max_operator_precedence >= 0) {
+    ASTNode root_expression_node{expression(max_operator_precedence - 1)};
+
+    if (root_expression_node.type == AST_NODE_NULL) {
+      move_cursor_back_to(entry_cursor_pos);
+      return {AST_NODE_NULL, {}, {}};
+    }
+
+    /*----------------------------*/
+    /* Binary operator expression */
+    /*----------------------------*/
+    // Keep finding operators with the max precedence
+    for (std::string operator_name{binary_operator(max_operator_precedence)}; operator_name != "";
+         operator_name = binary_operator(max_operator_precedence)) {
+      ASTNode right_expression_node{expression(max_operator_precedence - 1)};
+      if (right_expression_node.type == AST_NODE_NULL) abort("Expected expression after operator");
+
+      // The current root becomes the left node in the new expression
+      root_expression_node = {AST_NODE_EXPRESSION_BINARY_OPERATION,
+                              {{"type", operator_name}},
+                              {root_expression_node, right_expression_node}};
+    }
+
+    return root_expression_node;
+  }
 
   /*--------------------------*/
   /* Parenthesised expression */
   /*--------------------------*/
+  move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_LPAREN)) {
     ASTNode expression_node{expression()};
     if (expression_node.type == AST_NODE_NULL) abort("Expected expression after '('");
     if (!token(TOKEN_RPAREN)) abort("Expected ')' after expression");
-
-    // Greedily search for a binary operator
-    std::string operator_name{binary_operator()};
-    if (operator_name != "") {
-      ASTNode next_expression_node{expression()};
-      if (next_expression_node.type == AST_NODE_NULL) abort("Expected expression after operator");
-
-      if (m_print_debug) std::cout << "operator expression\n";
-      return {AST_NODE_EXPRESSION_BINARY_OPERATION,
-              {{"type", operator_name}},
-              {expression_node, next_expression_node}};
-    }
-
-    expression_node.data["parenthesised"] = "true";  // Mark this for precedence
 
     if (m_print_debug) std::cout << "parenthesised expression\n";
     return expression_node;
@@ -506,7 +523,7 @@ ASTNode Parser::expression() {
   /*---------------------*/
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_MINUS)) {
-    ASTNode expression_node{expression()};
+    ASTNode expression_node{expression(-1)};
     if (expression_node.type == AST_NODE_NULL) abort("Expected expression after '-");
 
     if (m_print_debug) std::cout << "negative expression\n";
@@ -518,16 +535,16 @@ ASTNode Parser::expression() {
   /*--------------------*/
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_NOT)) {
-    ASTNode expression_node{expression()};
+    ASTNode expression_node{expression(-1)};
     if (expression_node.type == AST_NODE_NULL) abort("Expected expression after '!");
 
     if (m_print_debug) std::cout << "negated expression\n";
     return {AST_NODE_EXPRESSION_UNARY_OPERATION, {{"type", "not"}}, {expression_node}};
   }
 
-  /*-------------------------------------*/
-  /* Expression beginning with a literal */
-  /*-------------------------------------*/
+  /*--------------------*/
+  /* Literal expression */
+  /*--------------------*/
   move_cursor_back_to(entry_cursor_pos);
   if (token(TOKEN_FLOAT_LITERAL) || token(TOKEN_INT_LITERAL)) {
     ASTNode literal_node{AST_NODE_EXPRESSION_LITERAL,
@@ -535,18 +552,6 @@ ASTNode Parser::expression() {
                           {"value", std::string{m_tokens[m_cursor_pos - 1].get_text()}}},
                          {}};
 
-    // Greedily search for a binary operator
-    std::string operator_name{binary_operator()};
-    if (operator_name != "") {
-      ASTNode next_expression_node{expression()};
-      if (next_expression_node.type == AST_NODE_NULL) abort("Expected expression after operator");
-
-      if (m_print_debug) std::cout << "operator expression\n";
-      return {
-          AST_NODE_EXPRESSION_BINARY_OPERATION, {{"type", operator_name}}, {literal_node, next_expression_node}};
-    }
-
-    // Only accept lone literal expression if no operator was found afterwards
     if (m_print_debug) std::cout << "literal expression\n";
     return literal_node;
   }
@@ -576,18 +581,6 @@ ASTNode Parser::expression() {
 
       if (!token(TOKEN_RPAREN)) abort("Expected ')' at end of function call in statement");
 
-      // Greedily search for a binary operator
-      std::string operator_name{binary_operator()};
-      if (operator_name != "") {
-        ASTNode next_expression_node{expression()};
-        if (next_expression_node.type == AST_NODE_NULL) abort("Expected expression after operator");
-
-        if (m_print_debug) std::cout << "operator expression\n";
-        return {AST_NODE_EXPRESSION_BINARY_OPERATION,
-                {{"type", operator_name}},
-                {function_call_node, next_expression_node}};
-      }
-
       if (m_print_debug) std::cout << "function call expression\n";
       return function_call_node;
     }
@@ -598,17 +591,6 @@ ASTNode Parser::expression() {
     ASTNode variable_node{
         AST_NODE_EXPRESSION_VARIABLE, {{"name", std::string{m_tokens[m_cursor_pos - 1].get_text()}}}, {}};
 
-    // Greedily search for a binary operator
-    std::string operator_name{binary_operator()};
-    if (operator_name != "") {
-      ASTNode next_expression_node{expression()};
-      if (next_expression_node.type == AST_NODE_NULL) abort("Expected expression after operator");
-
-      if (m_print_debug) std::cout << "operator expression\n";
-      return {
-          AST_NODE_EXPRESSION_BINARY_OPERATION, {{"type", operator_name}}, {variable_node, next_expression_node}};
-    }
-
     if (m_print_debug) std::cout << "variable expression\n";
     return variable_node;
   }
@@ -617,17 +599,23 @@ ASTNode Parser::expression() {
   return {AST_NODE_NULL, {}, {}};
 }
 
-std::string Parser::binary_operator() {
+std::string Parser::binary_operator(int precedence) {
+  int entry_cursor_pos{m_cursor_pos};
+
   /*-----------------*/
   /* Binary operator */
   /*-----------------*/
   if (token(TOKEN_PLUS) || token(TOKEN_MINUS) || token(TOKEN_MULTIPLY) || token(TOKEN_DIVIDE) || token(TOKEN_EQ) ||
       token(TOKEN_NEQ) || token(TOKEN_LT) || token(TOKEN_LE) || token(TOKEN_GT) || token(TOKEN_GE) ||
       token(TOKEN_AND) || token(TOKEN_OR)) {
-    if (m_print_debug) std::cout << "binary operator\n";
-    return Token::type_names.at(m_tokens[m_cursor_pos - 1].get_type());
+    TokenType token_type{m_tokens[m_cursor_pos - 1].get_type()};
+    if (binary_operator_precedences.at(token_type) == precedence) {
+      if (m_print_debug) std::cout << "binary operator\n";
+      return Token::type_names.at(token_type);
+    }
   }
 
+  move_cursor_back_to(entry_cursor_pos);
   return "";
 }
 

@@ -71,6 +71,12 @@ class Parser {
   //      | tkn_semi
   ASTNode statement();
 
+  // -- Precedence info for use in expression --
+  inline static const std::unordered_map<TokenType, int> binary_operator_precedences{
+      {TOKEN_MULTIPLY, 0}, {TOKEN_DIVIDE, 0}, {TOKEN_PLUS, 1}, {TOKEN_MINUS, 1}, {TOKEN_LT, 2},  {TOKEN_LE, 2},
+      {TOKEN_GT, 2},       {TOKEN_GE, 2},     {TOKEN_EQ, 3},   {TOKEN_NEQ, 3},   {TOKEN_AND, 4}, {TOKEN_OR, 5}};
+  static constexpr int max_binary_operator_precedence{5};
+
   // expr: tkn_lparen expr tk_rparen
   //     | tkn_min expr
   //     | tkn_not expr
@@ -80,11 +86,17 @@ class Parser {
   //     | expr log_op expr
   //     | tkn_float_lit
   //     | tkn_int_lit
-  ASTNode expression();
+  ASTNode expression() { return expression(max_binary_operator_precedence); }
+  ASTNode expression(int max_precedence);
 
-  // bin_op: tkn_plus | tkn_min | tkn_mul | tkn_div | tkn_eq | tkn_neq | tkn_lt | tkn_le | tkn_gt | tkn_ge
-  //         ... | tkn_and | tkn_or
-  std::string binary_operator();
+  // Lower precedence operators should be computed first (so end up lower in the tree)
+  // bin_op(0): tkn_mul | tkn_div
+  // bin_op(1): tkn_plus | tkn_min
+  // bin_op(2): tkn_lt | tkn_le | tkn_gt | tkn_ge
+  // bin_op(3): tkn_eq | tkn_neq
+  // bin_op(4): tkn_and
+  // bin_op(5): tkn_or
+  std::string binary_operator(int precedence);
 
   // Read one token of the given type
   bool token(TokenType token_type);
