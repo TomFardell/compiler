@@ -480,7 +480,17 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
     }
 
     case AST_NODE_EXPRESSION_UNARY_OPERATION: {
-      return "";  // TODO: Fill out
+      std::string result{process_ast_node(node.children[0], function_name)};
+
+      if (node.data.at("type") == "not") {
+        result.append(std::format("  cmp {}, 0\n", expression_register));
+        result.append(std::format("  mov {}, 0\n", expression_register));  // Only setting lowest byte so clear
+        result.append(std::format("  sete {}\n", expression_register_byte));
+      } else if (node.data.at("type") == "minus") {
+        result.append(std::format("  neg {}\n", expression_register));
+      }
+
+      return result;
     }
     case AST_NODE_EXPRESSION_BINARY_OPERATION: {
       return "";  // TODO: Fill out

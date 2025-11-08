@@ -73,6 +73,7 @@ class Emitter {
   // -- Information of registers used in the assembly --
   static constexpr std::string_view expression_register{"r10"};  // Register in which expression results are placed
   static constexpr std::string_view operation_register{"r11"};   // Register used to hold right operands
+  static constexpr std::string_view expression_register_byte{"r10b"};  // Lowest byte of the expression register
   // Registers used to pass arguments to functions (in order)
   static constexpr std::array<std::string_view, 6> parameter_registers{"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
