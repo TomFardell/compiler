@@ -29,5 +29,5 @@ asm-clean:
 $(EXE): $(OBJECTS)
 	$(CXX) $(CPPFLAGS) $(EXTRAFLAGS) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c
+%.o: %.cpp
 	$(CXX) $(CPPFLAGS) $(EXTRAFLAGS) -c -o $@ $<

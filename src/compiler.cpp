@@ -18,18 +18,35 @@ std::string read_file(const std::string file_path) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cout << "Run the program with a single argument: the file to be compiled, i.e. ./compiler test.c\n";
-    std::exit(EXIT_FAILURE);
+  std::string in_file_name{};
+  std::string out_file_name{"a.asm"};
+  bool verbose{false};
+
+  for (int i{1}; i < argc; ++i) {
+    std::string str_arg{argv[i]};
+
+    if (str_arg == "-o") {
+      out_file_name = argv[++i];
+    } else if (str_arg == "-v") {
+      verbose = true;
+    } else if (str_arg[0] == '-') {
+      std::cerr << "Compilation aborted\n-> Unknown option type '" << str_arg << "'\n";
+      exit(EXIT_FAILURE);
+    } else {
+      in_file_name = str_arg;
+    }
   }
 
-  std::string in_file_name{argv[1]};
+  if (in_file_name == "") {
+    std::cerr << "Compilation aborted\n-> Input file name not specified\n";
+    exit(EXIT_FAILURE);
+  }
 
   std::string source_string{read_file(in_file_name)};  // Should exist for the lifetime of the lexer and parser
 
   Lexer lexer{source_string};
-  Emitter emitter{"a.asm"};  // TODO: Add -o argument to change this
-  Parser parser{lexer, emitter, true};
+  Emitter emitter{out_file_name};
+  Parser parser{lexer, emitter, verbose};
 
   parser.parse();
 
