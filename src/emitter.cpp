@@ -364,6 +364,7 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
         // TODO: Handle float case here
         result.append(std::format("  mov {}, write_int_fmt\n", parameter_registers[0]));
         result.append(std::format("  mov {}, {}\n", parameter_registers[1], expression_register));
+        result.append("  mov rax, 0\n");  // For int formats, printf requires us to zero out rax
       }
 
       result.append("  call printf\n");
@@ -479,21 +480,106 @@ std::string Emitter::process_ast_node(ASTNode &node, std::string function_name) 
       return "";
     }
 
+    /*----------------------------*/
+    /* Unary operation expression */
+    /*----------------------------*/
     case AST_NODE_EXPRESSION_UNARY_OPERATION: {
-      std::string result{process_ast_node(node.children[0], function_name)};
+      std::string result{};
+      std::string operation_type{node.data.at("type")};
+      ASTNode &expression_node = node.children[0];
 
-      if (node.data.at("type") == "not") {
+      result.append(process_ast_node(expression_node, function_name));
+
+      if (operation_type == "not") {
         result.append(std::format("  cmp {}, 0\n", expression_register));
         result.append(std::format("  mov {}, 0\n", expression_register));  // Only setting lowest byte so clear
         result.append(std::format("  sete {}\n", expression_register_byte));
-      } else if (node.data.at("type") == "minus") {
+      } else if (operation_type == "minus") {
         result.append(std::format("  neg {}\n", expression_register));
+      } else {
+        abort("Unexpected unary operation type");
       }
 
       return result;
     }
+
+    /*-----------------------------*/
+    /* Binary operation expression */
+    /*-----------------------------*/
     case AST_NODE_EXPRESSION_BINARY_OPERATION: {
-      return "";  // TODO: Fill out
+      std::string result{};
+      ASTNode &left_expression_node = node.children[0];
+      ASTNode &right_expression_node = node.children[1];
+      std::string operation_type{node.data.at("type")};
+
+      // Operators and/or have short circuiting so behave slightly differently
+      if (operation_type == "and" || operation_type == "or") {
+        int short_circuit_number{m_functions_info.at(function_name).m_short_circuit_count++};
+
+        result.append(process_ast_node(left_expression_node, function_name));
+        result.append(std::format("  cmp {}, 0\n", expression_register));
+        result.append(std::format("  {} .{}{}\n", operation_type == "and" ? "je" : "jne", short_circuit_label,
+                                  short_circuit_number));
+        result.append(process_ast_node(right_expression_node, function_name));
+        result.append(std::format("  cmp {}, 0\n", expression_register));
+        result.append(std::format(".{}{}:\n", short_circuit_label, short_circuit_number));
+        result.append(std::format("  mov {}, 0\n", expression_register));
+        result.append(std::format("  set{} {}\n", operation_type == "and" ? "ne" : "e", expression_register_byte));
+      } else {
+        // -- Output code for the left and right expressions. The result of the left expression ends up in the
+        // operation register, and the result of the right expression ends up in the expression register --
+        result.append(process_ast_node(left_expression_node, function_name));
+        result.append(std::format("  push {}\n", expression_register));
+        result.append(process_ast_node(right_expression_node, function_name));
+        result.append(std::format("  pop {}\n", operation_register));
+
+        if (operation_type == "multiply") {
+          // -- Multiplication requires one operand to be in rax and places the result in rdx:rax --
+          result.append(std::format("  mov rax, {}\n", operation_register));
+          result.append(std::format("  imul {}\n", expression_register));
+          result.append(std::format("  mov {}, rax\n", expression_register));  // Ignore the upper 8 bytes
+        } else if (operation_type == "divide") {
+          // -- Division requires the dividend to be in rdx:rax --
+          result.append("  mov rdx, 0\n");  // Zero out the top 8 bytes of the dividend
+          result.append(std::format("  mov rax, {}\n", operation_register));
+          result.append(std::format("  idiv {}\n", expression_register));
+          result.append(std::format("  mov {}, rax\n", expression_register));  // Ignore the remainder bytes
+        } else if (operation_type == "plus") {
+          result.append(std::format("  add {}, {}\n", expression_register, operation_register));
+        } else if (operation_type == "minus") {
+          // -- Subtraction is not commutatative so requires an extra move --
+          result.append(std::format("  sub {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, {}\n", expression_register, operation_register));
+        } else if (operation_type == "lt") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  setl {}\n", expression_register_byte));
+        } else if (operation_type == "le") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  setle {}\n", expression_register_byte));
+        } else if (operation_type == "gt") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  setg {}\n", expression_register_byte));
+        } else if (operation_type == "ge") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  setge {}\n", expression_register_byte));
+        } else if (operation_type == "eq") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  sete {}\n", expression_register_byte));
+        } else if (operation_type == "neq") {
+          result.append(std::format("  cmp {}, {}\n", operation_register, expression_register));
+          result.append(std::format("  mov {}, 0\n", expression_register));
+          result.append(std::format("  setne {}\n", expression_register_byte));
+        } else {
+          abort("Unexpected binary operation type");
+        }
+      }
+
+      return result;
     }
 
     /*---------------------*/

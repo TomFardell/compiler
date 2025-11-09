@@ -23,6 +23,7 @@ class FunctionInfo {
   int m_stack_offset;           // Offset of the next local variable to be added
   int m_if_statement_count;     // Running number of if statements in the function
   int m_while_statement_count;  // Running number of while statements in the function
+  int m_short_circuit_count;    // Running number of short circuits (from and/or) in the function
   bool m_is_defined;            // Whether a definition of the function exists
   bool m_is_called;             // Whether the function is called at some point during the program
 
@@ -33,6 +34,7 @@ class FunctionInfo {
         m_stack_offset{0},
         m_if_statement_count{0},
         m_while_statement_count{0},
+        m_short_circuit_count{0},
         m_is_defined{false},
         m_is_called{false} {};
 
@@ -69,6 +71,7 @@ class Emitter {
   static constexpr std::string_view while_label{"while_start"};      // Label at the top of while loop
   static constexpr std::string_view while_end_label{"while_end"};    // Label at the end of while loop
   static constexpr std::string_view function_end_label{"func_end"};  // Label at the end of a function
+  static constexpr std::string_view short_circuit_label{"short_circuit"};  // Label for short circuit jumps
 
   // -- Information of registers used in the assembly --
   static constexpr std::string_view expression_register{"r10"};  // Register in which expression results are placed
